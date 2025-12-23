@@ -14,6 +14,7 @@ import java.util.UUID;
 class Product {
 
     @Id
+    @GeneratedValue
     private UUID id;
 
     private String name;
