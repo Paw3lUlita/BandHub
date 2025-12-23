@@ -13,7 +13,7 @@ import java.util.UUID;
 @Table(name = "product_categories")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-class ProductCategory {
+public class ProductCategory {
 
     @Id
     private UUID id;

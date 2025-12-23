@@ -12,6 +12,7 @@ CREATE TABLE products
 (
     id             UUID PRIMARY KEY,
     name           VARCHAR(255)   NOT NULL,
+    description    VARCHAR(2000),
     price          NUMERIC(19, 2) NOT NULL, -- Typ dla pieniędzy
     currency       VARCHAR(3) DEFAULT 'PLN',
     stock_quantity INT            NOT NULL,
@@ -85,6 +86,3 @@ CREATE TABLE news_articles
     published_date TIMESTAMP,
     author_id      VARCHAR(255)
 );
-
--- Tabela techniczna dla Flywaya (opcjonalna, ale dobra praktyka to wiedzieć)
--- Flyway sam stworzy tabelę flyway_schema_history, żeby wiedzieć, że ten plik został już uruchomiony.

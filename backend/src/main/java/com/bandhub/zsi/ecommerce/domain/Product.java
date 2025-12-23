@@ -11,13 +11,16 @@ import java.util.UUID;
 @Table(name = "products")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-class Product {
+public class Product {
 
     @Id
     @GeneratedValue
     private UUID id;
 
     private String name;
+
+    @Column(length = 2000)
+    private String description;
 
     @Embedded
     @AttributeOverrides({
@@ -36,12 +39,16 @@ class Product {
     @JoinColumn(name = "category_id")
     private ProductCategory category;
 
-    public Product(String name, Money price, int stockQuantity, ProductCategory category) {
-        this.id = UUID.randomUUID();
+    public Product(String name, String description, Money price, int stockQuantity, ProductCategory category) {
         this.name = name;
+        this.description = description;
         this.price = price;
         this.stockQuantity = stockQuantity;
         this.category = category;
+    }
+
+    public static Product create(String name, String description, Money price, int stock, ProductCategory category) {
+        return new Product(name, description, price, stock, category);
     }
 
     public void updateStock(int quantityChange) {
