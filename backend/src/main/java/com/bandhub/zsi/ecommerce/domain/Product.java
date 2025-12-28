@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.util.Assert; // Do walidacji
 
 import java.util.UUID;
 
@@ -39,16 +40,29 @@ public class Product {
     @JoinColumn(name = "category_id")
     private ProductCategory category;
 
-    public Product(String name, String description, Money price, int stockQuantity, ProductCategory category) {
-        this.name = name;
-        this.description = description;
-        this.price = price;
-        this.stockQuantity = stockQuantity;
-        this.category = category;
-    }
-
     public static Product create(String name, String description, Money price, int stock, ProductCategory category) {
         return new Product(name, description, price, stock, category);
+    }
+
+    private Product(String name, String description, Money price, int stockQuantity, ProductCategory category) {
+        changeDetails(name, description, price, stockQuantity, category);
+    }
+
+    public void changeDetails(String name, String description, Money price, int stockQuantity, ProductCategory category) {
+        Assert.hasText(name, "Product name cannot be empty");
+        Assert.notNull(price, "Price is required");
+        Assert.notNull(category, "Category is required");
+
+        if (stockQuantity < 0) {
+            throw new IllegalArgumentException("Stock cannot be negative");
+        }
+
+        // 2. Zmiana stanu
+        this.name = name;
+        this.description = description;
+        this.price = price; // Podmieniamy cały obiekt Money (Value Object)
+        this.stockQuantity = stockQuantity;
+        this.category = category;
     }
 
     public void updateStock(int quantityChange) {

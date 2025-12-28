@@ -21,6 +21,18 @@ export const routes: Routes = [
         path: 'dashboard',
         loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent)
       },
+      {
+        path: 'products',
+        loadComponent: () => import('./features/products/product-list.component').then(m => m.ProductListComponent)
+      },
+      {
+        path: 'products/new',
+        loadComponent: () => import('./features/products/product-add.component').then(m => m.ProductAddComponent)
+      },
+      {
+        path: 'products/:id',
+        loadComponent: () => import('./features/products/product-add.component').then(m => m.ProductAddComponent)
+      },
       // Domyślna podstrona dla /admin
       {
         path: '',

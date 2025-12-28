@@ -5,6 +5,7 @@ import com.bandhub.zsi.ecommerce.domain.Product;
 import com.bandhub.zsi.ecommerce.domain.ProductCategory;
 import com.bandhub.zsi.ecommerce.dto.CreateProductRequest;
 import com.bandhub.zsi.ecommerce.dto.ProductResponse;
+import com.bandhub.zsi.ecommerce.dto.UpdateProductCommand;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +24,8 @@ public class ProductAdminService {
         this.productRepository = productRepository;
         this.categoryRepository = categoryRepository;
     }
+
+    // --- ISTNIEJĄCE METODY ---
 
     public UUID createProduct(CreateProductRequest request) {
         ProductCategory category = categoryRepository.findById(request.categoryId())
@@ -54,6 +57,38 @@ public class ProductAdminService {
             throw new EntityNotFoundException("Produkt o podanym ID nie istnieje: " + id);
         }
         productRepository.deleteById(id);
+    }
+
+    public void updateProduct(UUID id, UpdateProductCommand command) {
+        // 1. Pobierz agregat (Product)
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Product not found: " + id));
+
+        // 2. Pobierz potrzebne zależności (Category)
+        ProductCategory category = categoryRepository.findById(command.categoryId())
+                .orElseThrow(() -> new EntityNotFoundException("Category not found: " + command.categoryId()));
+
+        // 3. Przygotuj Value Objects
+        Money price = new Money(command.price(), command.currency());
+
+        // 4. Wykonaj akcję domenową
+        product.changeDetails(
+                command.name(),
+                command.description(),
+                price,
+                command.stockQuantity(),
+                category
+        );
+
+        // 5. Koniec. Hibernate sam wyśle UPDATE dzięki @Transactional (Dirty Checking).
+        // Nie trzeba wołać productRepository.save(product)!
+    }
+
+    @Transactional(readOnly = true)
+    public ProductResponse getProduct(UUID id) {
+        return productRepository.findById(id)
+                .map(this::toResponse)
+                .orElseThrow(() -> new EntityNotFoundException("Product not found: " + id));
     }
 
     private ProductResponse toResponse(Product product) {
