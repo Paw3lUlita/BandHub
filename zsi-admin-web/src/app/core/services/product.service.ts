@@ -11,6 +11,7 @@ export interface Product {
   currency: string;
   stockQuantity: number;
   categoryName: string;
+  categoryId: string;
 }
 
 // Żądanie POST (Dodawanie)

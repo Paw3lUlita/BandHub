@@ -1,8 +1,10 @@
 import { Component, inject, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule } from '@angular/common'; // Ważne dla AsyncPipe
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ProductService, CreateProductRequest } from '../../core/services/product.service';
+import { CategoryService, Category } from '../../core/services/category.service'; // <--- NOWY IMPORT
+import { Observable } from 'rxjs';
 
 @Component({
   selector: 'app-product-add',
@@ -30,23 +32,30 @@ import { ProductService, CreateProductRequest } from '../../core/services/produc
           </div>
 
           <div class="form-control">
-            <label class="label"><span class="label-text">Waluta</span></label>
-            <input type="text" formControlName="currency" class="input input-bordered" readonly />
+             <label class="label"><span class="label-text">Waluta</span></label>
+             <input type="text" formControlName="currency" class="input input-bordered" readonly />
           </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <div class="form-control">
-            <label class="label"><span class="label-text">Ilość (Sztuki)</span></label>
-            <input type="number" formControlName="stockQuantity" class="input input-bordered"
-                   [class.input-error]="isInvalid('stockQuantity')" />
-          </div>
+            <div class="form-control">
+                <label class="label"><span class="label-text">Ilość (Sztuki)</span></label>
+                <input type="number" formControlName="stockQuantity" class="input input-bordered"
+                       [class.input-error]="isInvalid('stockQuantity')" />
+            </div>
 
-          <div class="form-control">
-            <label class="label"><span class="label-text">ID Kategorii (UUID)</span></label>
-            <input type="text" formControlName="categoryId" class="input input-bordered"
-                   [class.input-error]="isInvalid('categoryId')" />
-          </div>
+            <div class="form-control">
+                <label class="label"><span class="label-text">Kategoria</span></label>
+
+                <select formControlName="categoryId" class="select select-bordered"
+                        [class.select-error]="isInvalid('categoryId')">
+                    <option value="" disabled selected>Wybierz kategorię</option>
+
+                    @for (cat of categories$ | async; track cat.id) {
+                        <option [value]="cat.id">{{ cat.name }}</option>
+                    }
+                </select>
+            </div>
         </div>
 
         <div class="form-control w-full mb-6">
@@ -69,12 +78,16 @@ import { ProductService, CreateProductRequest } from '../../core/services/produc
 export class ProductAddComponent implements OnInit {
   private fb = inject(FormBuilder);
   private productService = inject(ProductService);
+  private categoryService = inject(CategoryService); // <--- WSTRZYKNIĘCIE
   private router = inject(Router);
-  private route = inject(ActivatedRoute); // Do czytania URL
+  private route = inject(ActivatedRoute);
 
   isSubmitting = false;
   isEditMode = false;
   productId: string | null = null;
+
+  // Strumień z kategoriami
+  categories$!: Observable<Category[]>;
 
   productForm = this.fb.group({
     name: ['', [Validators.required, Validators.minLength(3)]],
@@ -82,13 +95,15 @@ export class ProductAddComponent implements OnInit {
     price: [0, [Validators.required, Validators.min(0.01)]],
     currency: ['PLN', Validators.required],
     stockQuantity: [0, [Validators.required, Validators.min(0)]],
-    categoryId: ['', [Validators.required, Validators.minLength(36)]]
+    categoryId: ['', Validators.required] // UUID, ale wybierane z listy
   });
 
   ngOnInit() {
-    // Sprawdzamy czy w adresie jest ID (np. /products/e282...)
-    this.productId = this.route.snapshot.paramMap.get('id');
+    // 1. Pobieramy kategorie od razu przy starcie
+    this.categories$ = this.categoryService.getAll();
 
+    // 2. Obsługa edycji
+    this.productId = this.route.snapshot.paramMap.get('id');
     if (this.productId) {
       this.isEditMode = true;
       this.loadProductData(this.productId);
@@ -98,23 +113,20 @@ export class ProductAddComponent implements OnInit {
   loadProductData(id: string) {
     this.productService.getProduct(id).subscribe({
       next: (product) => {
-        // Wypełniamy formularz danymi z backendu
         this.productForm.patchValue({
           name: product.name,
           description: product.description,
           price: product.price,
           currency: product.currency,
-          stockQuantity: product.stockQuantity ?? 0, // Fallback jeśli null
-          // UWAGA: Tu jest problem - Backend zwraca categoryName, a my potrzebujemy ID do edycji.
-          // Jeśli backend nie zwraca categoryId w GET, będziesz musiał wpisać je ręcznie ponownie.
-          // Na razie zostawiam puste lub to co przyjdzie.
-          categoryId: ''
+          stockQuantity: product.stockQuantity,
+          categoryId: product.categoryId
         });
       },
       error: (err) => console.error('Błąd pobierania produktu', err)
     });
   }
 
+  // ... reszta metod (onSubmit, isInvalid) bez zmian ...
   isInvalid(field: string): boolean {
     const control = this.productForm.get(field);
     return !!(control && control.invalid && (control.dirty || control.touched));
@@ -127,13 +139,11 @@ export class ProductAddComponent implements OnInit {
     const request = this.productForm.value as unknown as CreateProductRequest;
 
     if (this.isEditMode && this.productId) {
-      // EDYCJA (PUT)
       this.productService.updateProduct(this.productId, request).subscribe({
         next: () => this.handleSuccess(),
         error: (err) => this.handleError(err)
       });
     } else {
-      // DODAWANIE (POST)
       this.productService.createProduct(request).subscribe({
         next: () => this.handleSuccess(),
         error: (err) => this.handleError(err)
@@ -142,13 +152,11 @@ export class ProductAddComponent implements OnInit {
   }
 
   private handleSuccess() {
-    console.log('✅ Sukces');
     this.router.navigate(['/admin/products']);
   }
 
   private handleError(err: any) {
     console.error('❌ Błąd:', err);
     this.isSubmitting = false;
-    alert('Wystąpił błąd zapisu.');
   }
 }

@@ -33,6 +33,18 @@ export const routes: Routes = [
         path: 'products/:id',
         loadComponent: () => import('./features/products/product-add.component').then(m => m.ProductAddComponent)
       },
+      {
+        path: 'categories',
+        loadComponent: () => import('./features/categories/category-list.component').then(m => m.CategoryListComponent)
+      },
+      {
+        path: 'categories/new',
+        loadComponent: () => import('./features/categories/category-add.component').then(m => m.CategoryAddComponent)
+      },
+      {
+        path: 'categories/:id',
+        loadComponent: () => import('./features/categories/category-add.component').then(m => m.CategoryAddComponent)
+      },
       // Domyślna podstrona dla /admin
       {
         path: '',

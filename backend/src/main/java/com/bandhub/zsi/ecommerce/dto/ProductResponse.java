@@ -10,5 +10,6 @@ public record ProductResponse(
         BigDecimal price,
         String currency,
         int stockQuantity,
-        String categoryName
+        String categoryName,
+        UUID categoryId
 ) {}

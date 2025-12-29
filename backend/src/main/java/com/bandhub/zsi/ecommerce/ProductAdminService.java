@@ -101,7 +101,8 @@ public class ProductAdminService {
                 product.getPrice().amount(),
                 product.getPrice().currency(),
                 product.getStockQuantity(),
-                categoryName
+                categoryName,
+                product.getCategory().getId()
         );
     }
 }
