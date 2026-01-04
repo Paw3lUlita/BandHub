@@ -22,8 +22,9 @@ public class Order {
     private UUID id;
 
     @Column(name = "user_id")
-    private String userId; // ID usera z Keycloak
+    private String userId;
 
+    @Column(name = "order_date")
     private LocalDateTime createdAt;
 
     @Enumerated(EnumType.STRING)
@@ -36,7 +37,6 @@ public class Order {
     })
     private Money totalAmount;
 
-    // Elementy zamówienia są trzymane w osobnej tabeli, ale zarządzane przez Order
     @ElementCollection
     @CollectionTable(name = "order_items", joinColumns = @JoinColumn(name = "order_id"))
     private List<OrderItem> items = new ArrayList<>();
@@ -58,16 +58,22 @@ public class Order {
             this.totalAmount = Money.pln(0);
             return;
         }
-        // Sumowanie BigDecimal
+
         var sum = items.stream()
                 .map(OrderItem::calculateLineTotal)
                 .map(Money::amount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        this.totalAmount = new Money(sum, items.get(0).getUnitPrice().currency());
+        String currency = items.get(0).getUnitPrice().currency();
+
+        this.totalAmount = new Money(sum, currency);
     }
 
     public void markAsShipped() {
         this.status = OrderStatus.SHIPPED;
+    }
+
+    public void cancel() {
+        this.status = OrderStatus.CANCELLED;
     }
 }
