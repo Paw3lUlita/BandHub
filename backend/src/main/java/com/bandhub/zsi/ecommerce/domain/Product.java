@@ -65,11 +65,13 @@ public class Product {
         this.category = category;
     }
 
-    public void updateStock(int quantityChange) {
-        int newStock = this.stockQuantity + quantityChange;
-        if (newStock < 0) {
-            throw new IllegalStateException("Stock cannot be negative");
+    public void reduceStock(int quantity) {
+        if (quantity <= 0) {
+            throw new IllegalArgumentException("Quantity to reduce must be positive");
         }
-        this.stockQuantity = newStock;
+        if (this.stockQuantity < quantity) {
+            throw new IllegalStateException("Not enough stock for product: " + this.id);
+        }
+        this.stockQuantity = this.stockQuantity - quantity;
     }
 }
