@@ -55,7 +55,7 @@ import { OidcSecurityService } from 'angular-auth-oidc-client';
             <a routerLink="/admin/categories" routerLinkActive="active">Kategorie</a>
           </li>
           <li>
-            <a>Zamówienia</a>
+            <a routerLink="/admin/orders" routerLinkActive="active">Zamówienia</a>
           </li>
 
           <li class="menu-title mt-4">Wydarzenia</li>

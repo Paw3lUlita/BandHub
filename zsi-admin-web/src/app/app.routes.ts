@@ -45,6 +45,11 @@ export const routes: Routes = [
         path: 'categories/:id',
         loadComponent: () => import('./features/categories/category-add.component').then(m => m.CategoryAddComponent)
       },
+      {
+        path: 'orders',
+        loadComponent: () => import('./features/orders/order-list.component')
+          .then(m => m.OrderListComponent)
+      },
       // Domyślna podstrona dla /admin
       {
         path: '',
