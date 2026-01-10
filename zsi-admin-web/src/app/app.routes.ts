@@ -50,6 +50,10 @@ export const routes: Routes = [
         loadComponent: () => import('./features/orders/order-list.component')
           .then(m => m.OrderListComponent)
       },
+      {
+        path: 'orders/:id', // Parametr :id
+        loadComponent: () => import('./features/orders/order-detail.component').then(m => m.OrderDetailComponent)
+      },
       // Domyślna podstrona dla /admin
       {
         path: '',

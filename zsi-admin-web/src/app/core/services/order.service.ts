@@ -22,6 +22,24 @@ export interface UpdateStatusCommand {
   newStatus: OrderStatus;
 }
 
+export interface OrderItem {
+  productId: string;
+  productName: string;
+  quantity: number;
+  unitPrice: number;
+  lineTotal: number;
+}
+
+export interface OrderDetails {
+  id: string;
+  createdAt: string;
+  status: OrderStatus;
+  totalAmount: number;
+  currency: string;
+  userId: string;
+  items: OrderItem[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class OrderService {
   private http = inject(HttpClient);
@@ -37,5 +55,10 @@ export class OrderService {
   updateStatus(id: string, newStatus: OrderStatus): Observable<void> {
     const command: UpdateStatusCommand = { newStatus };
     return this.http.patch<void>(`${this.apiUrl}/${id}/status`, command);
+  }
+
+  // C. Pobranie szczegółów
+  getOrder(id: string): Observable<OrderDetails> {
+    return this.http.get<OrderDetails>(`${this.apiUrl}/${id}`);
   }
 }
