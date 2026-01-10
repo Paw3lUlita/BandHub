@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.NativeQuery;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
@@ -26,6 +27,11 @@ class SqlOrderRepository implements OrderRepository {
     @Override
     public List<Order> findAllByOrderByCreatedAtDesc() {
         return jpaRepository.findAllByOrderByCreatedAtDesc();
+    }
+
+    @Override
+    public Optional<Order> findById(UUID orderId) {
+        return jpaRepository.findById(orderId);
     }
 }
 

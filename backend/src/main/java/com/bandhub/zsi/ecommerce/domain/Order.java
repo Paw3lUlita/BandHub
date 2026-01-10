@@ -75,4 +75,8 @@ public class Order {
     public void cancel() {
         this.status = OrderStatus.CANCELLED;
     }
+
+    public void changeStatus(OrderStatus newStatus) {
+        this.status = newStatus;
+    }
 }
