@@ -1,6 +1,8 @@
 package com.bandhub.zsi.ecommerce;
 
 import com.bandhub.zsi.ecommerce.domain.Order;
+import com.bandhub.zsi.ecommerce.dto.OrderDetailsResponse;
+import com.bandhub.zsi.ecommerce.dto.OrderItemDto;
 import com.bandhub.zsi.ecommerce.dto.OrderSummaryResponse;
 import com.bandhub.zsi.ecommerce.domain.OrderStatus;
 import jakarta.persistence.EntityNotFoundException;
@@ -47,6 +49,32 @@ public class OrderAdminService {
                 amount,
                 currency,
                 order.getUserId()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public OrderDetailsResponse getOrderDetails(UUID orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new EntityNotFoundException("Order not found: " + orderId));
+
+        List<OrderItemDto> itemsDto = order.getItems().stream()
+                .map(item -> new OrderItemDto(
+                        item.getProductId(),
+                        item.getProductName(),
+                        item.getQuantity(),
+                        item.getUnitPrice().amount(),
+                        item.calculateLineTotal().amount()
+                ))
+                .toList();
+
+        return new OrderDetailsResponse(
+                order.getId(),
+                order.getCreatedAt(),
+                order.getStatus(),
+                order.getTotalAmount().amount(),
+                order.getTotalAmount().currency(),
+                order.getUserId(),
+                itemsDto
         );
     }
 }

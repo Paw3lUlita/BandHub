@@ -1,5 +1,6 @@
 package com.bandhub.zsi.ecommerce;
 
+import com.bandhub.zsi.ecommerce.dto.OrderDetailsResponse;
 import com.bandhub.zsi.ecommerce.dto.OrderSummaryResponse;
 import com.bandhub.zsi.ecommerce.dto.UpdateStatusCommand;
 import org.springframework.http.ResponseEntity;
@@ -29,5 +30,10 @@ class OrderAdminController {
     ResponseEntity<Void> updateStatus(@PathVariable UUID id, @RequestBody UpdateStatusCommand command) {
         service.updateOrderStatus(id, command.newStatus());
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{id}")
+    ResponseEntity<OrderDetailsResponse> getOne(@PathVariable UUID id) {
+        return ResponseEntity.ok(service.getOrderDetails(id));
     }
 }
