@@ -44,7 +44,6 @@ public class Order {
     // Factory method
     public static Order create(String userId, List<OrderItem> items) {
         Order order = new Order();
-        order.id = UUID.randomUUID();
         order.userId = userId;
         order.createdAt = LocalDateTime.now();
         order.status = OrderStatus.NEW;

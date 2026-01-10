@@ -1,7 +1,6 @@
 package com.bandhub.zsi.ecommerce.domain;
 
-import jakarta.persistence.Embeddable;
-import jakarta.persistence.Embedded;
+import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -17,6 +16,10 @@ public class OrderItem {
     private UUID productId;
     private String productName;
     @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "amount", column = @Column(name = "unit_price")),
+            @AttributeOverride(name = "currency", column = @Column(name = "currency"))
+    })
     private Money unitPrice;
     private int quantity;
 
