@@ -39,7 +39,9 @@ import { ConcertService } from '../../core/services/concert.service';
                 <span class="badge badge-ghost">{{ concert.city }}</span>
               </td>
               <td>
-                <button class="btn btn-ghost btn-xs">Szczegóły</button>
+                <a [routerLink]="['/admin/concerts', concert.id]" class="btn btn-ghost btn-xs">
+                   Szczegóły
+                </a>
               </td>
             </tr>
           } @empty {

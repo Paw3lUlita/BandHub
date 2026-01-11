@@ -62,8 +62,6 @@ export const routes: Routes = [
         path: 'venues/new',
         loadComponent: () => import('./features/venues/venue-add.component').then(m => m.VenueAddComponent)
       },
-
-      // 2. Koncerty (Concerts) - to zrobimy za chwilę w Task 5.3, ale możesz już dodać
       {
         path: 'concerts',
         loadComponent: () => import('./features/concerts/concert-list.component').then(m => m.ConcertListComponent)
@@ -71,6 +69,10 @@ export const routes: Routes = [
       {
         path: 'concerts/new',
         loadComponent: () => import('./features/concerts/concert-add.component').then(m => m.ConcertAddComponent)
+      },
+      {
+        path: 'concerts/:id',
+        loadComponent: () => import('./features/concerts/concert-detail.component').then(m => m.ConcertDetailComponent)
       },
       // Domyślna podstrona dla /admin
       {

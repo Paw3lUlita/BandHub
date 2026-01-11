@@ -1,5 +1,6 @@
 package com.bandhub.zsi.ticketing;
 
+import com.bandhub.zsi.ticketing.dto.ConcertDetailResponse;
 import com.bandhub.zsi.ticketing.dto.ConcertResponse;
 import com.bandhub.zsi.ticketing.dto.CreateConcertRequest;
 import org.springframework.http.ResponseEntity;
@@ -31,4 +32,10 @@ class ConcertAdminController {
     ResponseEntity<List<ConcertResponse>> getAll() {
         return ResponseEntity.ok(service.getAllConcerts());
     }
+
+    @GetMapping("/{id}")
+    ResponseEntity<ConcertDetailResponse> getOne(@PathVariable UUID id) {
+        return ResponseEntity.ok(service.getConcert(id));
+    }
+
 }
