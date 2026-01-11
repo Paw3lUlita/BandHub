@@ -54,6 +54,24 @@ export const routes: Routes = [
         path: 'orders/:id', // Parametr :id
         loadComponent: () => import('./features/orders/order-detail.component').then(m => m.OrderDetailComponent)
       },
+      {
+        path: 'venues',
+        loadComponent: () => import('./features/venues/venue-list.component').then(m => m.VenueListComponent)
+      },
+      {
+        path: 'venues/new',
+        loadComponent: () => import('./features/venues/venue-add.component').then(m => m.VenueAddComponent)
+      },
+
+      // 2. Koncerty (Concerts) - to zrobimy za chwilę w Task 5.3, ale możesz już dodać
+      {
+        path: 'concerts',
+        loadComponent: () => import('./features/concerts/concert-list.component').then(m => m.ConcertListComponent)
+      },
+      {
+        path: 'concerts/new',
+        loadComponent: () => import('./features/concerts/concert-add.component').then(m => m.ConcertAddComponent)
+      },
       // Domyślna podstrona dla /admin
       {
         path: '',
