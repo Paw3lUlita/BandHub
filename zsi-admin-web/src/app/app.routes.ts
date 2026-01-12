@@ -74,6 +74,22 @@ export const routes: Routes = [
         path: 'concerts/:id',
         loadComponent: () => import('./features/concerts/concert-detail.component').then(m => m.ConcertDetailComponent)
       },
+      {
+        path: 'gallery',
+        loadComponent: () => import('./features/cms/gallery/gallery-list.component').then(m => m.GalleryListComponent)
+      },
+      {
+        path: 'news',
+        loadComponent: () => import('./features/cms/news/news-list.component').then(m => m.NewsListComponent)
+      },
+      {
+        path: 'news/new',
+        loadComponent: () => import('./features/cms/news/news-add.component').then(m => m.NewsAddComponent)
+      },
+      {
+        path: 'news/:id',
+        loadComponent: () => import('./features/cms/news/news-add.component').then(m => m.NewsAddComponent)
+      },
       // Domyślna podstrona dla /admin
       {
         path: '',

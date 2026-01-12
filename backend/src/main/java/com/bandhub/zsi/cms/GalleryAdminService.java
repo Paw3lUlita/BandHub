@@ -68,7 +68,7 @@ public class GalleryAdminService {
                 .map(img -> new GalleryImageResponse(
                         img.getId(),
                         img.getTitle(),
-                        "/api/public/uploads/" + img.getImageUrl(), // Generujemy URL dostępny dla frontendu
+                        "http://localhost:8080/api/public/uploads/" + img.getImageUrl(),
                         img.getUploadedAt()
                 ))
                 .toList();

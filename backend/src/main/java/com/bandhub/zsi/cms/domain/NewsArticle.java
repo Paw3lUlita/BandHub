@@ -35,7 +35,6 @@ public class NewsArticle {
 
     public static NewsArticle publish(String title, String content, String imageUrl, String authorId) {
         NewsArticle news = new NewsArticle();
-        news.id = UUID.randomUUID();
         news.publishedDate = LocalDateTime.now();
         news.authorId = authorId;
         news.updateContent(title, content, imageUrl);

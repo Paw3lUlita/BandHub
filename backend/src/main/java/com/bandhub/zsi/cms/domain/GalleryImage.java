@@ -27,7 +27,6 @@ public class GalleryImage {
 
     public static GalleryImage upload(String title, String filename) {
         GalleryImage img = new GalleryImage();
-        img.id = UUID.randomUUID();
         img.title = title;
         img.imageUrl = filename;
         img.uploadedAt = LocalDateTime.now();

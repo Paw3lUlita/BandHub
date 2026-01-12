@@ -47,9 +47,7 @@ import { OidcSecurityService } from 'angular-auth-oidc-client';
 
           <li class="menu-title mt-4">E-commerce</li>
           <li>
-            <a routerLink="/admin/products" routerLinkActive="active">
-              Produkty (Merch)
-            </a>
+            <a routerLink="/admin/products" routerLinkActive="active">Merch (Produkty)</a>
           </li>
           <li>
             <a routerLink="/admin/categories" routerLinkActive="active">Kategorie</a>
@@ -57,10 +55,24 @@ import { OidcSecurityService } from 'angular-auth-oidc-client';
           <li>
             <a routerLink="/admin/orders" routerLinkActive="active">Zamówienia</a>
           </li>
-          <li><a routerLink="/admin/venues" routerLinkActive="active">Miejsca</a></li>
-          <li><a routerLink="/admin/concerts" routerLinkActive="active">Koncerty</a></li>
-        </ul>
 
+          <li class="menu-title mt-4">Ticketing & Trasa</li>
+          <li>
+            <a routerLink="/admin/concerts" routerLinkActive="active">Koncerty</a>
+          </li>
+          <li>
+            <a routerLink="/admin/venues" routerLinkActive="active">Miejsca</a>
+          </li>
+
+          <li class="menu-title mt-4">CMS / Treści</li>
+          <li>
+            <a routerLink="/admin/news" routerLinkActive="active">Aktualności</a>
+          </li>
+          <li>
+            <a routerLink="/admin/gallery" routerLinkActive="active">Galeria Zdjęć</a>
+          </li>
+
+        </ul>
       </div>
     </div>
   `

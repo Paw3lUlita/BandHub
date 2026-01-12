@@ -37,7 +37,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/admin/**").authenticated()
 
                         // endpoint publiczny dla składania zamówień
-                        .requestMatchers("/api/public/**").authenticated()
+                        .requestMatchers("/api/public/**").permitAll()
 
                         // Reszta też wymaga logowania
                         .anyRequest().authenticated()
