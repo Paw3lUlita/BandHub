@@ -1,6 +1,6 @@
 package com.bandhub.zsi.ticketing.domain;
 
-import com.bandhub.zsi.ecommerce.domain.Money;
+import com.bandhub.zsi.shared.Money;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;

@@ -1,10 +1,8 @@
-package com.bandhub.zsi.ecommerce.domain;
+package com.bandhub.zsi.shared;
 
 import jakarta.persistence.Embeddable;
 import java.math.BigDecimal;
 
-// To jest Value Object - niemutowalny obiekt wartości.
-// @Embeddable oznacza, że jego pola "wkleją się" do tabeli rodzica.
 @Embeddable
 public record Money(BigDecimal amount, String currency) {
 

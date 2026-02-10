@@ -1,6 +1,6 @@
 package com.bandhub.zsi.ecommerce;
 
-import com.bandhub.zsi.ecommerce.domain.Money;
+import com.bandhub.zsi.shared.Money;
 import com.bandhub.zsi.ecommerce.domain.Product;
 import com.bandhub.zsi.ecommerce.domain.ProductCategory;
 import com.bandhub.zsi.ecommerce.dto.CreateProductRequest;

@@ -1,11 +1,10 @@
 package com.bandhub.zsi.ticketing.domain;
 
-import com.bandhub.zsi.ecommerce.domain.Money;
+import com.bandhub.zsi.shared.Money;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.springframework.util.Assert;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -31,9 +30,6 @@ public class Concert {
 
     @Column(name = "image_url")
     private String imageUrl;
-
-    // Ignorujemy na razie tour_name z bazy, wrócimy do tego przy Logistyce
-    // private String tourName;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "venue_id") // To pasuje do V1
@@ -64,7 +60,7 @@ public class Concert {
     }
 
     // Importuj Money z modułu ecommerce
-    // import com.bandhub.zsi.ecommerce.domain.Money;
+    // import com.bandhub.zsi.shared.Money;
     // import java.math.BigDecimal;
 
     public void configureTicketPool(String poolName, BigDecimal price, String currency, int quantity) {
