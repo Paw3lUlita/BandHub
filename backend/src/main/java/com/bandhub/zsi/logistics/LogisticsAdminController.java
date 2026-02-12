@@ -1,12 +1,13 @@
 package com.bandhub.zsi.logistics;
 
-import com.bandhub.zsi.logistics.dto.CreateCostRequest;
-import com.bandhub.zsi.logistics.dto.CreateTourRequest;
+import com.bandhub.zsi.logistics.domain.Tour;
+import com.bandhub.zsi.logistics.dto.*;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -18,6 +19,30 @@ class LogisticsAdminController {
 
     LogisticsAdminController(LogisticsAdminService service) {
         this.service = service;
+    }
+
+    @GetMapping("/tours")
+    ResponseEntity<List<TourResponse>> getAll() {
+        var tours = service.getAllTours().stream()
+                .map(t -> new TourResponse(t.getId(), t.getName(), t.getStartDate(), t.getEndDate()))
+                .toList();
+        return ResponseEntity.ok(tours);
+    }
+
+    @GetMapping("/tours/{id}")
+    ResponseEntity<TourDetailResponse> getOne(@PathVariable UUID id) {
+        Tour tour = service.getTour(id);
+
+        // Mapujemy koszty
+        var costResponses = tour.getCosts().stream()
+                .map(c -> new TourCostResponse(c.getId(), c.getTitle(), c.getCost().amount(), c.getCost().currency(), c.getCostDate()))
+                .toList();
+
+        var response = new TourDetailResponse(
+                tour.getId(), tour.getName(), tour.getDescription(),
+                tour.getStartDate(), tour.getEndDate(), costResponses
+        );
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/tours")

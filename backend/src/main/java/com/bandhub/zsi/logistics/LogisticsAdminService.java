@@ -9,6 +9,7 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -52,5 +53,14 @@ public class LogisticsAdminService {
         tour.logCost(cost);
 
         tourRepository.save(tour);
+    }
+
+    public List<Tour> getAllTours() {
+        return tourRepository.findAll();
+    }
+
+    public Tour getTour(UUID id) {
+        return tourRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Tour not found: " + id));
     }
 }
