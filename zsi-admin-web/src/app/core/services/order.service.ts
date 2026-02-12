@@ -43,7 +43,7 @@ export interface OrderDetails {
 @Injectable({ providedIn: 'root' })
 export class OrderService {
   private http = inject(HttpClient);
-  // URL do controllera admina
+
   private apiUrl = 'http://localhost:8080/api/admin/orders';
 
   // A. Pobranie listy zamówień

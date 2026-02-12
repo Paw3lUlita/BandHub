@@ -2,8 +2,7 @@ package com.bandhub.zsi.logistics;
 
 import com.bandhub.zsi.logistics.domain.Tour;
 import com.bandhub.zsi.logistics.domain.TourCost;
-import com.bandhub.zsi.logistics.dto.CreateCostRequest;
-import com.bandhub.zsi.logistics.dto.CreateTourRequest;
+import com.bandhub.zsi.logistics.dto.*;
 import com.bandhub.zsi.shared.Money;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
@@ -55,12 +54,36 @@ public class LogisticsAdminService {
         tourRepository.save(tour);
     }
 
-    public List<Tour> getAllTours() {
-        return tourRepository.findAll();
+    @Transactional(readOnly = true) // Optymalizacja dla odczytu
+    public List<TourResponse> getAllTours() {
+        return tourRepository.findAll().stream()
+                .map(t -> new TourResponse(t.getId(), t.getName(), t.getStartDate(), t.getEndDate()))
+                .toList();
     }
 
-    public Tour getTour(UUID id) {
-        return tourRepository.findById(id)
+    @Transactional(readOnly = true)
+    public TourDetailResponse getTourDetails(UUID id) {
+        Tour tour = tourRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Tour not found: " + id));
+
+
+        var costResponses = tour.getCosts().stream()
+                .map(c -> new TourCostResponse(
+                        c.getId(),
+                        c.getTitle(),
+                        c.getCost().amount(),
+                        c.getCost().currency(),
+                        c.getCostDate()
+                ))
+                .toList();
+
+        return new TourDetailResponse(
+                tour.getId(),
+                tour.getName(),
+                tour.getDescription(),
+                tour.getStartDate(),
+                tour.getEndDate(),
+                costResponses
+        );
     }
 }

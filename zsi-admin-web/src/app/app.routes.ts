@@ -90,6 +90,18 @@ export const routes: Routes = [
         path: 'news/:id',
         loadComponent: () => import('./features/cms/news/news-add.component').then(m => m.NewsAddComponent)
       },
+      {
+        path: 'logistics',
+        loadComponent: () => import('./features/logistics/tour-list.component').then(m => m.TourListComponent)
+      },
+      {
+        path: 'logistics/new',
+        loadComponent: () => import('./features/logistics/tour-add.component').then(m => m.TourAddComponent)
+      },
+      {
+        path: 'logistics/:id',
+        loadComponent: () => import('./features/logistics/tour-detail.component').then(m => m.TourDetailComponent)
+      },
       // Domyślna podstrona dla /admin
       {
         path: '',
