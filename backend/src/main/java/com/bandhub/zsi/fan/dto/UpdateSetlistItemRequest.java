@@ -1,0 +1,14 @@
+package com.bandhub.zsi.fan.dto;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+
+import java.util.UUID;
+
+public record UpdateSetlistItemRequest(
+        @NotNull UUID setlistId,
+        @NotBlank String songTitle,
+        @Positive int songOrder,
+        Integer durationSeconds
+) {}
