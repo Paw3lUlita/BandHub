@@ -3,6 +3,8 @@ package com.bandhub.zsi.ecommerce;
 import com.bandhub.zsi.ecommerce.dto.CreateProductRequest;
 import com.bandhub.zsi.ecommerce.dto.ProductResponse;
 import com.bandhub.zsi.ecommerce.dto.UpdateProductCommand;
+import com.bandhub.zsi.shared.api.PageResponse;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -27,8 +29,19 @@ class ProductAdminController {
         return ResponseEntity.ok(service.getAllProducts());
     }
 
+    @GetMapping("/page")
+    ResponseEntity<PageResponse<ProductResponse>> getPage(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "name") String sortBy,
+            @RequestParam(defaultValue = "asc") String sortDir,
+            @RequestParam(defaultValue = "") String q
+    ) {
+        return ResponseEntity.ok(service.getProductsPage(page, size, sortBy, sortDir, q));
+    }
+
     @PostMapping
-    ResponseEntity<Void> create(@RequestBody CreateProductRequest request) {
+    ResponseEntity<Void> create(@RequestBody @Valid CreateProductRequest request) {
         UUID id = service.createProduct(request);
         return ResponseEntity.created(URI.create("/api/admin/products/" + id)).build();
     }
@@ -39,7 +52,7 @@ class ProductAdminController {
     }
 
     @PutMapping("/{id}")
-    ResponseEntity<Void> update(@PathVariable UUID id, @RequestBody CreateProductRequest request) {
+    ResponseEntity<Void> update(@PathVariable UUID id, @RequestBody @Valid CreateProductRequest request) {
         UpdateProductCommand command = new UpdateProductCommand(
                 request.name(),
                 request.description(),

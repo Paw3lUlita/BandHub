@@ -1,6 +1,8 @@
 package com.bandhub.zsi.logistics;
 
 import com.bandhub.zsi.logistics.dto.*; // Import DTO
+import com.bandhub.zsi.shared.api.PageResponse;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -21,13 +23,13 @@ class LogisticsAdminController {
     }
 
     @PostMapping("/tours")
-    ResponseEntity<Void> createTour(@RequestBody CreateTourRequest request) {
+    ResponseEntity<Void> createTour(@RequestBody @Valid CreateTourRequest request) {
         UUID id = service.createTour(request);
         return ResponseEntity.created(URI.create("/api/admin/logistics/tours/" + id)).build();
     }
 
     @PutMapping("/tours/{id}")
-    ResponseEntity<Void> updateTour(@PathVariable UUID id, @RequestBody UpdateTourRequest request) {
+    ResponseEntity<Void> updateTour(@PathVariable UUID id, @RequestBody @Valid UpdateTourRequest request) {
         service.updateTour(id, request);
         return ResponseEntity.noContent().build();
     }
@@ -39,13 +41,13 @@ class LogisticsAdminController {
     }
 
     @PostMapping("/tours/{tourId}/costs")
-    ResponseEntity<Void> addCost(@PathVariable UUID tourId, @RequestBody CreateCostRequest request) {
+    ResponseEntity<Void> addCost(@PathVariable UUID tourId, @RequestBody @Valid CreateCostRequest request) {
         service.addCost(tourId, request);
         return ResponseEntity.ok().build();
     }
 
     @PutMapping("/tours/{tourId}/costs/{costId}")
-    ResponseEntity<Void> updateCost(@PathVariable UUID tourId, @PathVariable UUID costId, @RequestBody UpdateCostRequest request) {
+    ResponseEntity<Void> updateCost(@PathVariable UUID tourId, @PathVariable UUID costId, @RequestBody @Valid UpdateCostRequest request) {
         service.updateCost(tourId, costId, request);
         return ResponseEntity.noContent().build();
     }
@@ -57,13 +59,13 @@ class LogisticsAdminController {
     }
 
     @PostMapping("/tours/{tourId}/revenues")
-    ResponseEntity<Void> addRevenue(@PathVariable UUID tourId, @RequestBody CreateRevenueRequest request) {
+    ResponseEntity<Void> addRevenue(@PathVariable UUID tourId, @RequestBody @Valid CreateRevenueRequest request) {
         service.addRevenue(tourId, request);
         return ResponseEntity.ok().build();
     }
 
     @PutMapping("/tours/{tourId}/revenues/{revenueId}")
-    ResponseEntity<Void> updateRevenue(@PathVariable UUID tourId, @PathVariable UUID revenueId, @RequestBody UpdateRevenueRequest request) {
+    ResponseEntity<Void> updateRevenue(@PathVariable UUID tourId, @PathVariable UUID revenueId, @RequestBody @Valid UpdateRevenueRequest request) {
         service.updateRevenue(tourId, revenueId, request);
         return ResponseEntity.noContent().build();
     }
@@ -77,6 +79,17 @@ class LogisticsAdminController {
     @GetMapping("/tours")
     ResponseEntity<List<TourResponse>> getAll() {
         return ResponseEntity.ok(service.getAllTours());
+    }
+
+    @GetMapping("/tours/page")
+    ResponseEntity<PageResponse<TourResponse>> getPage(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "startDate") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir,
+            @RequestParam(defaultValue = "") String q
+    ) {
+        return ResponseEntity.ok(service.getToursPage(page, size, sortBy, sortDir, q));
     }
 
     @GetMapping("/tours/{id}")

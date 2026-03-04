@@ -46,6 +46,17 @@ export interface ConcertDetails {
   ticketPools: TicketPoolResponse[];
 }
 
+export interface PageResponse<T> {
+  content: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  sortBy: string;
+  sortDir: string;
+  query: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ConcertService {
   private http = inject(HttpClient);
@@ -53,6 +64,24 @@ export class ConcertService {
 
   getAll(): Observable<Concert[]> {
     return this.http.get<Concert[]>(this.apiUrl);
+  }
+
+  getPage(params: {
+    page?: number;
+    size?: number;
+    sortBy?: string;
+    sortDir?: 'asc' | 'desc';
+    q?: string;
+  }): Observable<PageResponse<Concert>> {
+    const queryParams = new URLSearchParams({
+      page: String(params.page ?? 0),
+      size: String(params.size ?? 10),
+      sortBy: params.sortBy ?? 'date',
+      sortDir: params.sortDir ?? 'desc',
+      q: params.q ?? ''
+    });
+
+    return this.http.get<PageResponse<Concert>>(`${this.apiUrl}/page?${queryParams.toString()}`);
   }
 
   create(concert: CreateConcertRequest): Observable<void> {

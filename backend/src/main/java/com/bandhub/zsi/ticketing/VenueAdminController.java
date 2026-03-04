@@ -2,6 +2,7 @@ package com.bandhub.zsi.ticketing;
 
 import com.bandhub.zsi.ticketing.dto.CreateVenueRequest;
 import com.bandhub.zsi.ticketing.dto.VenueResponse;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -27,7 +28,7 @@ class VenueAdminController {
     }
 
     @PostMapping
-    ResponseEntity<Void> create(@RequestBody CreateVenueRequest request) {
+    ResponseEntity<Void> create(@RequestBody @Valid CreateVenueRequest request) {
         UUID id = service.createVenue(request);
         return ResponseEntity.created(URI.create("/api/admin/venues/" + id)).build();
     }

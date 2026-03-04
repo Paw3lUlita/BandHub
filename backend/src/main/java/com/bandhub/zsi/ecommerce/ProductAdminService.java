@@ -6,10 +6,12 @@ import com.bandhub.zsi.ecommerce.domain.ProductCategory;
 import com.bandhub.zsi.ecommerce.dto.CreateProductRequest;
 import com.bandhub.zsi.ecommerce.dto.ProductResponse;
 import com.bandhub.zsi.ecommerce.dto.UpdateProductCommand;
+import com.bandhub.zsi.shared.api.PageResponse;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
@@ -89,6 +91,44 @@ public class ProductAdminService {
         return productRepository.findById(id)
                 .map(this::toResponse)
                 .orElseThrow(() -> new EntityNotFoundException("Product not found: " + id));
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<ProductResponse> getProductsPage(int page, int size, String sortBy, String sortDir, String query) {
+        String normalizedQuery = query == null ? "" : query.trim().toLowerCase();
+        boolean descending = "desc".equalsIgnoreCase(sortDir);
+
+        List<ProductResponse> filtered = productRepository.findAll().stream()
+                .map(this::toResponse)
+                .filter(product -> normalizedQuery.isBlank()
+                        || product.name().toLowerCase().contains(normalizedQuery)
+                        || (product.description() != null && product.description().toLowerCase().contains(normalizedQuery))
+                        || (product.categoryName() != null && product.categoryName().toLowerCase().contains(normalizedQuery)))
+                .sorted(resolveComparator(sortBy, descending))
+                .toList();
+
+        int safePage = Math.max(page, 0);
+        int safeSize = Math.max(size, 1);
+        int fromIndex = safePage * safeSize;
+        int toIndex = Math.min(fromIndex + safeSize, filtered.size());
+
+        List<ProductResponse> content = fromIndex >= filtered.size()
+                ? List.of()
+                : filtered.subList(fromIndex, toIndex);
+
+        return PageResponse.of(content, safePage, safeSize, filtered.size(), sortBy, sortDir, query);
+    }
+
+    private Comparator<ProductResponse> resolveComparator(String sortBy, boolean descending) {
+        Comparator<ProductResponse> comparator = switch (sortBy) {
+            case "price" -> Comparator.comparing(ProductResponse::price);
+            case "stockQuantity" -> Comparator.comparing(ProductResponse::stockQuantity);
+            case "categoryName" -> Comparator.comparing(p -> p.categoryName() == null ? "" : p.categoryName());
+            case "name" -> Comparator.comparing(ProductResponse::name, String.CASE_INSENSITIVE_ORDER);
+            default -> Comparator.comparing(ProductResponse::name, String.CASE_INSENSITIVE_ORDER);
+        };
+
+        return descending ? comparator.reversed() : comparator;
     }
 
     private ProductResponse toResponse(Product product) {

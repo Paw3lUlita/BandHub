@@ -4,12 +4,14 @@ import com.bandhub.zsi.logistics.domain.Tour;
 import com.bandhub.zsi.logistics.domain.TourCost;
 import com.bandhub.zsi.logistics.domain.TourRevenue;
 import com.bandhub.zsi.logistics.dto.*;
+import com.bandhub.zsi.shared.api.PageResponse;
 import com.bandhub.zsi.shared.Money;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
@@ -123,6 +125,31 @@ public class LogisticsAdminService {
     }
 
     @Transactional(readOnly = true)
+    public PageResponse<TourResponse> getToursPage(int page, int size, String sortBy, String sortDir, String query) {
+        String normalizedQuery = query == null ? "" : query.trim().toLowerCase();
+        boolean descending = "desc".equalsIgnoreCase(sortDir);
+
+        List<TourResponse> filtered = tourRepository.findAll().stream()
+                .filter(tour -> normalizedQuery.isBlank()
+                        || tour.getName().toLowerCase().contains(normalizedQuery)
+                        || (tour.getDescription() != null && tour.getDescription().toLowerCase().contains(normalizedQuery)))
+                .map(t -> new TourResponse(t.getId(), t.getName(), t.getStartDate(), t.getEndDate()))
+                .sorted(resolveTourComparator(sortBy, descending))
+                .toList();
+
+        int safePage = Math.max(page, 0);
+        int safeSize = Math.max(size, 1);
+        int fromIndex = safePage * safeSize;
+        int toIndex = Math.min(fromIndex + safeSize, filtered.size());
+
+        List<TourResponse> content = fromIndex >= filtered.size()
+                ? List.of()
+                : filtered.subList(fromIndex, toIndex);
+
+        return PageResponse.of(content, safePage, safeSize, filtered.size(), sortBy, sortDir, query);
+    }
+
+    @Transactional(readOnly = true)
     public TourDetailResponse getTourDetails(UUID id) {
         Tour tour = tourRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Tour not found: " + id));
@@ -176,5 +203,16 @@ public class LogisticsAdminService {
         BigDecimal balance = totalRevenue.subtract(totalCosts);
 
         return new TourProfitabilityResponse(totalCosts, ticketRevenue, manualRevenue, totalRevenue, balance, "PLN");
+    }
+
+    private Comparator<TourResponse> resolveTourComparator(String sortBy, boolean descending) {
+        Comparator<TourResponse> comparator = switch (sortBy) {
+            case "endDate" -> Comparator.comparing(TourResponse::endDate);
+            case "name" -> Comparator.comparing(TourResponse::name, String.CASE_INSENSITIVE_ORDER);
+            case "startDate" -> Comparator.comparing(TourResponse::startDate);
+            default -> Comparator.comparing(TourResponse::startDate);
+        };
+
+        return descending ? comparator.reversed() : comparator;
     }
 }

@@ -1,6 +1,7 @@
 package com.bandhub.zsi.ecommerce;
 
 import com.bandhub.zsi.ecommerce.dto.PlaceOrderCommand;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -22,7 +23,7 @@ class OrderPublicController {
     }
 
     @PostMapping
-    ResponseEntity<Void> placeOrder(@RequestBody PlaceOrderCommand command, Authentication authentication) {
+    ResponseEntity<Void> placeOrder(@RequestBody @Valid PlaceOrderCommand command, Authentication authentication) {
         // 1. Wyciągamy ID użytkownika z tokena (Subject w JWT)
         // Spring Security automatycznie wstrzykuje obiekt Authentication, jeśli user jest zalogowany.
         String userId = authentication.getName();

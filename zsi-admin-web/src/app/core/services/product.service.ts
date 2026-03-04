@@ -14,6 +14,17 @@ export interface Product {
   categoryId: string;
 }
 
+export interface PageResponse<T> {
+  content: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  sortBy: string;
+  sortDir: string;
+  query: string;
+}
+
 // Żądanie POST (Dodawanie)
 export interface CreateProductRequest {
   name: string;
@@ -33,6 +44,24 @@ export class ProductService {
   // A. Lista Produktów (GET)
   getProducts(): Observable<Product[]> {
     return this.http.get<Product[]>(this.apiUrl);
+  }
+
+  getProductsPage(params: {
+    page?: number;
+    size?: number;
+    sortBy?: string;
+    sortDir?: 'asc' | 'desc';
+    q?: string;
+  }): Observable<PageResponse<Product>> {
+    const queryParams = new URLSearchParams({
+      page: String(params.page ?? 0),
+      size: String(params.size ?? 10),
+      sortBy: params.sortBy ?? 'name',
+      sortDir: params.sortDir ?? 'asc',
+      q: params.q ?? ''
+    });
+
+    return this.http.get<PageResponse<Product>>(`${this.apiUrl}/page?${queryParams.toString()}`);
   }
 
   // B. Dodawanie Produktu (POST)

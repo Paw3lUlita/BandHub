@@ -3,6 +3,8 @@ package com.bandhub.zsi.ticketing;
 import com.bandhub.zsi.ticketing.dto.ConcertDetailResponse;
 import com.bandhub.zsi.ticketing.dto.ConcertResponse;
 import com.bandhub.zsi.ticketing.dto.CreateConcertRequest;
+import com.bandhub.zsi.shared.api.PageResponse;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -23,7 +25,7 @@ class ConcertAdminController {
     }
 
     @PostMapping
-    ResponseEntity<Void> create(@RequestBody CreateConcertRequest request) {
+    ResponseEntity<Void> create(@RequestBody @Valid CreateConcertRequest request) {
         UUID id = service.createConcert(request);
         return ResponseEntity.created(URI.create("/api/admin/concerts/" + id)).build();
     }
@@ -31,6 +33,17 @@ class ConcertAdminController {
     @GetMapping
     ResponseEntity<List<ConcertResponse>> getAll() {
         return ResponseEntity.ok(service.getAllConcerts());
+    }
+
+    @GetMapping("/page")
+    ResponseEntity<PageResponse<ConcertResponse>> getPage(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "date") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir,
+            @RequestParam(defaultValue = "") String q
+    ) {
+        return ResponseEntity.ok(service.getConcertsPage(page, size, sortBy, sortDir, q));
     }
 
     @GetMapping("/{id}")

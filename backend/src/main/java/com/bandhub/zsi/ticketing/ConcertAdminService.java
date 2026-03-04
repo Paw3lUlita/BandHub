@@ -6,10 +6,12 @@ import com.bandhub.zsi.ticketing.dto.ConcertDetailResponse;
 import com.bandhub.zsi.ticketing.dto.ConcertResponse;
 import com.bandhub.zsi.ticketing.dto.CreateConcertRequest;
 import com.bandhub.zsi.ticketing.dto.TicketPoolResponse;
+import com.bandhub.zsi.shared.api.PageResponse;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
@@ -84,6 +86,44 @@ public class ConcertAdminService {
                 concert.getVenue().getCity(),
                 pools
         );
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<ConcertResponse> getConcertsPage(int page, int size, String sortBy, String sortDir, String query) {
+        String normalizedQuery = query == null ? "" : query.trim().toLowerCase();
+        boolean descending = "desc".equalsIgnoreCase(sortDir);
+
+        List<ConcertResponse> filtered = concertRepository.findAll().stream()
+                .map(this::toResponse)
+                .filter(concert -> normalizedQuery.isBlank()
+                        || concert.name().toLowerCase().contains(normalizedQuery)
+                        || concert.venueName().toLowerCase().contains(normalizedQuery)
+                        || concert.city().toLowerCase().contains(normalizedQuery))
+                .sorted(resolveComparator(sortBy, descending))
+                .toList();
+
+        int safePage = Math.max(page, 0);
+        int safeSize = Math.max(size, 1);
+        int fromIndex = safePage * safeSize;
+        int toIndex = Math.min(fromIndex + safeSize, filtered.size());
+
+        List<ConcertResponse> content = fromIndex >= filtered.size()
+                ? List.of()
+                : filtered.subList(fromIndex, toIndex);
+
+        return PageResponse.of(content, safePage, safeSize, filtered.size(), sortBy, sortDir, query);
+    }
+
+    private Comparator<ConcertResponse> resolveComparator(String sortBy, boolean descending) {
+        Comparator<ConcertResponse> comparator = switch (sortBy) {
+            case "venueName" -> Comparator.comparing(ConcertResponse::venueName, String.CASE_INSENSITIVE_ORDER);
+            case "city" -> Comparator.comparing(ConcertResponse::city, String.CASE_INSENSITIVE_ORDER);
+            case "name" -> Comparator.comparing(ConcertResponse::name, String.CASE_INSENSITIVE_ORDER);
+            case "date" -> Comparator.comparing(ConcertResponse::date);
+            default -> Comparator.comparing(ConcertResponse::date);
+        };
+
+        return descending ? comparator.reversed() : comparator;
     }
 
     private ConcertResponse toResponse(Concert concert) {

@@ -19,6 +19,17 @@ export interface NewsArticle {
   authorId: string;
 }
 
+export interface PageResponse<T> {
+  content: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  sortBy: string;
+  sortDir: string;
+  query: string;
+}
+
 export interface CreateNewsRequest {
   title: string;
   content: string;
@@ -49,6 +60,24 @@ export class CmsService {
   // --- NEWSY ---
   getAllNews(): Observable<NewsArticle[]> {
     return this.http.get<NewsArticle[]>(`${this.apiUrl}/news`);
+  }
+
+  getNewsPage(params: {
+    page?: number;
+    size?: number;
+    sortBy?: string;
+    sortDir?: 'asc' | 'desc';
+    q?: string;
+  }): Observable<PageResponse<NewsArticle>> {
+    const queryParams = new URLSearchParams({
+      page: String(params.page ?? 0),
+      size: String(params.size ?? 10),
+      sortBy: params.sortBy ?? 'publishedDate',
+      sortDir: params.sortDir ?? 'desc',
+      q: params.q ?? ''
+    });
+
+    return this.http.get<PageResponse<NewsArticle>>(`${this.apiUrl}/news/page?${queryParams.toString()}`);
   }
 
   getNews(id: string): Observable<NewsArticle> {

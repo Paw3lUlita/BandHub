@@ -83,6 +83,17 @@ export interface TourProfitability {
   currency: string;
 }
 
+export interface PageResponse<T> {
+  content: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  sortBy: string;
+  sortDir: string;
+  query: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class LogisticsService {
   private http = inject(HttpClient);
@@ -90,6 +101,24 @@ export class LogisticsService {
 
   getAllTours(): Observable<Tour[]> {
     return this.http.get<Tour[]>(`${this.apiUrl}/tours`);
+  }
+
+  getToursPage(params: {
+    page?: number;
+    size?: number;
+    sortBy?: string;
+    sortDir?: 'asc' | 'desc';
+    q?: string;
+  }): Observable<PageResponse<Tour>> {
+    const queryParams = new URLSearchParams({
+      page: String(params.page ?? 0),
+      size: String(params.size ?? 10),
+      sortBy: params.sortBy ?? 'startDate',
+      sortDir: params.sortDir ?? 'desc',
+      q: params.q ?? ''
+    });
+
+    return this.http.get<PageResponse<Tour>>(`${this.apiUrl}/tours/page?${queryParams.toString()}`);
   }
 
   createTour(request: CreateTourRequest): Observable<void> {

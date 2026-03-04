@@ -40,6 +40,17 @@ export interface OrderDetails {
   items: OrderItem[];
 }
 
+export interface PageResponse<T> {
+  content: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  sortBy: string;
+  sortDir: string;
+  query: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class OrderService {
   private http = inject(HttpClient);
@@ -49,6 +60,29 @@ export class OrderService {
   // A. Pobranie listy zamówień
   getOrders(): Observable<OrderSummary[]> {
     return this.http.get<OrderSummary[]>(this.apiUrl);
+  }
+
+  getOrdersPage(params: {
+    page?: number;
+    size?: number;
+    sortBy?: string;
+    sortDir?: 'asc' | 'desc';
+    q?: string;
+    status?: OrderStatus;
+  }): Observable<PageResponse<OrderSummary>> {
+    const queryParams = new URLSearchParams({
+      page: String(params.page ?? 0),
+      size: String(params.size ?? 10),
+      sortBy: params.sortBy ?? 'createdAt',
+      sortDir: params.sortDir ?? 'desc',
+      q: params.q ?? ''
+    });
+
+    if (params.status) {
+      queryParams.set('status', params.status);
+    }
+
+    return this.http.get<PageResponse<OrderSummary>>(`${this.apiUrl}/page?${queryParams.toString()}`);
   }
 
   // B. Zmiana statusu (PATCH)
