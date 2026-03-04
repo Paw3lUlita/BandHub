@@ -5,10 +5,12 @@ import com.bandhub.zsi.logistics.domain.Tour;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.math.BigDecimal;
 
 public interface TourRepository {
     Tour save(Tour tour);
     Optional<Tour> findById(UUID id);
     List<Tour> findAll();
     void deleteById(UUID id);
+    BigDecimal sumTicketSalesRevenue(UUID tourId);
 }

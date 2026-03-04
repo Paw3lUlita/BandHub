@@ -35,6 +35,9 @@ import { LogisticsService } from '../../core/services/logistics.service';
                 <a [routerLink]="['/admin/logistics', tour.id]" class="btn btn-ghost btn-sm text-primary">
                   Panel Logistyki
                 </a>
+                <button class="btn btn-ghost btn-sm text-error" (click)="deleteTour(tour.id)">
+                  Usun
+                </button>
               </td>
             </tr>
           } @empty {
@@ -52,4 +55,14 @@ import { LogisticsService } from '../../core/services/logistics.service';
 export class TourListComponent {
   private service = inject(LogisticsService);
   tours$ = this.service.getAllTours();
+
+  deleteTour(id: string) {
+    if (!confirm('Czy na pewno chcesz usunac trase?')) {
+      return;
+    }
+
+    this.service.deleteTour(id).subscribe(() => {
+      this.tours$ = this.service.getAllTours();
+    });
+  }
 }

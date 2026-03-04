@@ -37,4 +37,10 @@ public class TourCost {
         this.cost = cost;
         this.costDate = costDate;
     }
+
+    public void update(String title, Money cost, LocalDateTime costDate) {
+        this.title = title;
+        this.cost = cost;
+        this.costDate = costDate;
+    }
 }

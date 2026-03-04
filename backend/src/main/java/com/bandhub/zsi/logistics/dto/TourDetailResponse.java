@@ -11,5 +11,6 @@ public record TourDetailResponse(
         String description,
         LocalDateTime startDate,
         LocalDateTime endDate,
-        List<TourCostResponse> costs
+        List<TourCostResponse> costs,
+        List<TourRevenueResponse> revenues
 ) {}
