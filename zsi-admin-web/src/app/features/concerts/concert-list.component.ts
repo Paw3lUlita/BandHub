@@ -1,12 +1,22 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { AsyncPipe, DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { toObservable } from '@angular/core/rxjs-interop';
+import { switchMap } from 'rxjs';
 import { ConcertService } from '../../core/services/concert.service';
+import { ListPageControlsComponent, ListPageParams, SortOption } from '../shared/list-page-controls.component';
+
+const SORT_OPTIONS: SortOption[] = [
+  { value: 'date', label: 'Data' },
+  { value: 'name', label: 'Nazwa' },
+  { value: 'venueName', label: 'Miejsce' },
+  { value: 'city', label: 'Miasto' }
+];
 
 @Component({
   selector: 'app-concert-list',
   standalone: true,
-  imports: [AsyncPipe, DatePipe, RouterLink],
+  imports: [AsyncPipe, DatePipe, RouterLink, ListPageControlsComponent],
   template: `
     <div class="overflow-x-auto">
       <div class="flex justify-between items-center mb-4">
@@ -15,7 +25,13 @@ import { ConcertService } from '../../core/services/concert.service';
           + Dodaj Koncert
         </a>
       </div>
-
+      <app-list-page-controls
+        [params]="params()"
+        [sortOptions]="sortOptions"
+        [totalElements]="(pageData$ | async)?.totalElements ?? -1"
+        [totalPages]="(pageData$ | async)?.totalPages ?? 0"
+        (paramsChange)="onParamsChange($event)"
+      />
       <table class="table table-zebra bg-base-100 shadow-lg rounded-box">
         <thead>
           <tr class="bg-base-200">
@@ -27,7 +43,7 @@ import { ConcertService } from '../../core/services/concert.service';
           </tr>
         </thead>
         <tbody>
-          @for (concert of concerts$ | async; track concert.id) {
+          @for (concert of (pageData$ | async)?.content ?? []; track concert.id) {
             <tr class="hover">
               <td class="font-bold">{{ concert.name }}</td>
               <td>
@@ -58,5 +74,14 @@ import { ConcertService } from '../../core/services/concert.service';
 })
 export class ConcertListComponent {
   private concertService = inject(ConcertService);
-  concerts$ = this.concertService.getAll();
+  sortOptions = SORT_OPTIONS;
+
+  params = signal<ListPageParams>({ page: 0, size: 10, sortBy: 'date', sortDir: 'desc', q: '' });
+  pageData$ = toObservable(this.params).pipe(
+    switchMap(p => this.concertService.getPage({ page: p.page, size: p.size, sortBy: p.sortBy, sortDir: p.sortDir as 'asc' | 'desc', q: p.q }))
+  );
+
+  onParamsChange(p: ListPageParams) {
+    this.params.set(p);
+  }
 }

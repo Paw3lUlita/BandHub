@@ -1,12 +1,22 @@
-import {Component, inject} from '@angular/core';
-import {AsyncPipe, CurrencyPipe} from '@angular/common';
-import {RouterLink} from '@angular/router';
-import {ProductService} from '../../core/services/product.service';
+import { Component, inject, signal } from '@angular/core';
+import { AsyncPipe, CurrencyPipe } from '@angular/common';
+import { RouterLink } from '@angular/router';
+import { toObservable } from '@angular/core/rxjs-interop';
+import { switchMap } from 'rxjs';
+import { ProductService } from '../../core/services/product.service';
+import { ListPageControlsComponent, ListPageParams, SortOption } from '../shared/list-page-controls.component';
+
+const SORT_OPTIONS: SortOption[] = [
+  { value: 'name', label: 'Nazwa' },
+  { value: 'categoryName', label: 'Kategoria' },
+  { value: 'price', label: 'Cena' },
+  { value: 'stockQuantity', label: 'Stan' }
+];
 
 @Component({
   selector: 'app-product-list',
   standalone: true,
-  imports: [AsyncPipe, CurrencyPipe, RouterLink],
+  imports: [AsyncPipe, CurrencyPipe, RouterLink, ListPageControlsComponent],
   template: `
     <div class="overflow-x-auto">
       <div class="flex justify-between items-center mb-4">
@@ -15,7 +25,13 @@ import {ProductService} from '../../core/services/product.service';
           + Dodaj Produkt
         </a>
       </div>
-
+      <app-list-page-controls
+        [params]="params()"
+        [sortOptions]="sortOptions"
+        [totalElements]="(pageData$ | async)?.totalElements ?? -1"
+        [totalPages]="(pageData$ | async)?.totalPages ?? 0"
+        (paramsChange)="onParamsChange($event)"
+      />
       <table class="table table-zebra bg-base-100 shadow-lg rounded-box">
         <thead>
         <tr class="bg-base-200">
@@ -27,7 +43,7 @@ import {ProductService} from '../../core/services/product.service';
         </tr>
         </thead>
         <tbody>
-        @for (product of products$ | async; track product.id) {
+        @for (product of (pageData$ | async)?.content ?? []; track product.id) {
         <tr class="hover">
           <td>
             <div class="font-bold">{{ product.name }}</div>
@@ -63,15 +79,21 @@ import {ProductService} from '../../core/services/product.service';
 })
 export class ProductListComponent {
   private productService = inject(ProductService);
+  sortOptions = SORT_OPTIONS;
 
-  // Bezpośrednio przypisujemy Observable do zmiennej (AsyncPipe to obsłuży)
-  products$ = this.productService.getProducts();
+  params = signal<ListPageParams>({ page: 0, size: 10, sortBy: 'name', sortDir: 'asc', q: '' });
+  pageData$ = toObservable(this.params).pipe(
+    switchMap(p => this.productService.getProductsPage({ page: p.page, size: p.size, sortBy: p.sortBy, sortDir: p.sortDir as 'asc' | 'desc', q: p.q }))
+  );
+
+  onParamsChange(p: ListPageParams) {
+    this.params.set(p);
+  }
 
   onDelete(id: string) {
     if (confirm('Czy na pewno usunąć ten produkt?')) {
       this.productService.deleteProduct(id).subscribe(() => {
-        // Odśwież listę po usunięciu (prosty trick: ponowne przypisanie observable)
-        this.products$ = this.productService.getProducts();
+        this.params.update(prev => ({ ...prev }));
       });
     }
   }

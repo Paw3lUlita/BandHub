@@ -10,7 +10,6 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
@@ -61,30 +60,11 @@ public class FanNotificationReadAdminService {
 
     @Transactional(readOnly = true)
     public PageResponse<FanNotificationReadResponse> getPage(int page, int size, String sortBy, String sortDir, String query) {
-        String normalizedQuery = query == null ? "" : query.trim().toLowerCase();
-        boolean descending = "desc".equalsIgnoreCase(sortDir);
-        List<FanNotificationReadResponse> filtered = fanNotificationReadRepository.findAll().stream()
-                .map(this::toResponse)
-                .filter(item -> normalizedQuery.isBlank()
-                        || item.fanId().toLowerCase().contains(normalizedQuery)
-                        || item.notificationId().toString().toLowerCase().contains(normalizedQuery))
-                .sorted(resolveComparator(sortBy, descending))
-                .toList();
+        var result = fanNotificationReadRepository.findPage(page, size, sortBy, sortDir, query);
+        List<FanNotificationReadResponse> content = result.content().stream().map(this::toResponse).toList();
         int safePage = Math.max(page, 0);
         int safeSize = Math.max(size, 1);
-        int fromIndex = safePage * safeSize;
-        int toIndex = Math.min(fromIndex + safeSize, filtered.size());
-        List<FanNotificationReadResponse> content = fromIndex >= filtered.size() ? List.of() : filtered.subList(fromIndex, toIndex);
-        return PageResponse.of(content, safePage, safeSize, filtered.size(), sortBy, sortDir, query);
-    }
-
-    private Comparator<FanNotificationReadResponse> resolveComparator(String sortBy, boolean descending) {
-        Comparator<FanNotificationReadResponse> comparator = switch (sortBy) {
-            case "fanId" -> Comparator.comparing(FanNotificationReadResponse::fanId, String.CASE_INSENSITIVE_ORDER);
-            case "readAt" -> Comparator.comparing(FanNotificationReadResponse::readAt, Comparator.nullsLast(Comparator.naturalOrder()));
-            default -> Comparator.comparing(FanNotificationReadResponse::readAt, Comparator.nullsLast(Comparator.naturalOrder()));
-        };
-        return descending ? comparator.reversed() : comparator;
+        return PageResponse.of(content, safePage, safeSize, result.totalElements(), sortBy, sortDir, query);
     }
 
     private FanNotificationReadResponse toResponse(FanNotificationRead read) {

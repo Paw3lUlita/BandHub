@@ -9,7 +9,6 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
@@ -52,32 +51,11 @@ public class ReportRunAdminService {
 
     @Transactional(readOnly = true)
     public PageResponse<ReportRunResponse> getPage(int page, int size, String sortBy, String sortDir, String query) {
-        String normalizedQuery = query == null ? "" : query.trim().toLowerCase();
-        boolean descending = "desc".equalsIgnoreCase(sortDir);
-        List<ReportRunResponse> filtered = reportRunRepository.findAll().stream()
-                .map(this::toResponse)
-                .filter(item -> normalizedQuery.isBlank()
-                        || item.reportName().toLowerCase().contains(normalizedQuery)
-                        || item.status().toLowerCase().contains(normalizedQuery)
-                        || (item.requestedBy() != null && item.requestedBy().toLowerCase().contains(normalizedQuery)))
-                .sorted(resolveComparator(sortBy, descending))
-                .toList();
+        var result = reportRunRepository.findPage(page, size, sortBy, sortDir, query);
+        List<ReportRunResponse> content = result.content().stream().map(this::toResponse).toList();
         int safePage = Math.max(page, 0);
         int safeSize = Math.max(size, 1);
-        int fromIndex = safePage * safeSize;
-        int toIndex = Math.min(fromIndex + safeSize, filtered.size());
-        List<ReportRunResponse> content = fromIndex >= filtered.size() ? List.of() : filtered.subList(fromIndex, toIndex);
-        return PageResponse.of(content, safePage, safeSize, filtered.size(), sortBy, sortDir, query);
-    }
-
-    private Comparator<ReportRunResponse> resolveComparator(String sortBy, boolean descending) {
-        Comparator<ReportRunResponse> comparator = switch (sortBy) {
-            case "reportName" -> Comparator.comparing(ReportRunResponse::reportName, String.CASE_INSENSITIVE_ORDER);
-            case "status" -> Comparator.comparing(ReportRunResponse::status, String.CASE_INSENSITIVE_ORDER);
-            case "createdAt" -> Comparator.comparing(ReportRunResponse::createdAt, Comparator.nullsLast(Comparator.naturalOrder()));
-            default -> Comparator.comparing(ReportRunResponse::createdAt, Comparator.nullsLast(Comparator.naturalOrder()));
-        };
-        return descending ? comparator.reversed() : comparator;
+        return PageResponse.of(content, safePage, safeSize, result.totalElements(), sortBy, sortDir, query);
     }
 
     private ReportRunResponse toResponse(ReportRun run) {

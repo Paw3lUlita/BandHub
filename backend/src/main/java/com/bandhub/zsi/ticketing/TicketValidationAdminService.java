@@ -10,7 +10,6 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
@@ -62,31 +61,11 @@ public class TicketValidationAdminService {
 
     @Transactional(readOnly = true)
     public PageResponse<TicketValidationResponse> getPage(int page, int size, String sortBy, String sortDir, String query) {
-        String normalizedQuery = query == null ? "" : query.trim().toLowerCase();
-        boolean descending = "desc".equalsIgnoreCase(sortDir);
-        List<TicketValidationResponse> filtered = ticketValidationRepository.findAll().stream()
-                .map(this::toResponse)
-                .filter(item -> normalizedQuery.isBlank()
-                        || item.validationResult().toLowerCase().contains(normalizedQuery)
-                        || (item.validatedBy() != null && item.validatedBy().toLowerCase().contains(normalizedQuery))
-                        || item.ticketCodeId().toString().toLowerCase().contains(normalizedQuery))
-                .sorted(resolveComparator(sortBy, descending))
-                .toList();
+        var result = ticketValidationRepository.findPage(page, size, sortBy, sortDir, query);
+        List<TicketValidationResponse> content = result.content().stream().map(this::toResponse).toList();
         int safePage = Math.max(page, 0);
         int safeSize = Math.max(size, 1);
-        int fromIndex = safePage * safeSize;
-        int toIndex = Math.min(fromIndex + safeSize, filtered.size());
-        List<TicketValidationResponse> content = fromIndex >= filtered.size() ? List.of() : filtered.subList(fromIndex, toIndex);
-        return PageResponse.of(content, safePage, safeSize, filtered.size(), sortBy, sortDir, query);
-    }
-
-    private Comparator<TicketValidationResponse> resolveComparator(String sortBy, boolean descending) {
-        Comparator<TicketValidationResponse> comparator = switch (sortBy) {
-            case "validationResult" -> Comparator.comparing(TicketValidationResponse::validationResult, String.CASE_INSENSITIVE_ORDER);
-            case "validationTime" -> Comparator.comparing(TicketValidationResponse::validationTime, Comparator.nullsLast(Comparator.naturalOrder()));
-            default -> Comparator.comparing(TicketValidationResponse::validationTime, Comparator.nullsLast(Comparator.naturalOrder()));
-        };
-        return descending ? comparator.reversed() : comparator;
+        return PageResponse.of(content, safePage, safeSize, result.totalElements(), sortBy, sortDir, query);
     }
 
     private TicketValidationResponse toResponse(TicketValidation validation) {

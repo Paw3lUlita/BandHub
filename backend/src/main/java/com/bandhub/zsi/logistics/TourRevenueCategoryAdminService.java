@@ -9,7 +9,6 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
@@ -35,29 +34,11 @@ public class TourRevenueCategoryAdminService {
     @Transactional(readOnly = true) public List<TourCategoryResponse> getAll() { return repository.findAll().stream().map(this::toResponse).toList(); }
     @Transactional(readOnly = true)
     public PageResponse<TourCategoryResponse> getPage(int page, int size, String sortBy, String sortDir, String query) {
-        String normalized = query == null ? "" : query.trim().toLowerCase();
-        boolean descending = "desc".equalsIgnoreCase(sortDir);
-        List<TourCategoryResponse> filtered = getAll().stream()
-                .filter(item -> normalized.isBlank()
-                        || item.code().toLowerCase().contains(normalized)
-                        || item.name().toLowerCase().contains(normalized))
-                .sorted(resolveComparator(sortBy, descending))
-                .toList();
+        var result = repository.findPage(page, size, sortBy, sortDir, query);
+        List<TourCategoryResponse> content = result.content().stream().map(this::toResponse).toList();
         int safePage = Math.max(page, 0);
         int safeSize = Math.max(size, 1);
-        int fromIndex = safePage * safeSize;
-        int toIndex = Math.min(fromIndex + safeSize, filtered.size());
-        List<TourCategoryResponse> content = fromIndex >= filtered.size() ? List.of() : filtered.subList(fromIndex, toIndex);
-        return PageResponse.of(content, safePage, safeSize, filtered.size(), sortBy, sortDir, query);
-    }
-
-    private Comparator<TourCategoryResponse> resolveComparator(String sortBy, boolean descending) {
-        Comparator<TourCategoryResponse> comparator = switch (sortBy) {
-            case "code" -> Comparator.comparing(TourCategoryResponse::code, String.CASE_INSENSITIVE_ORDER);
-            case "active" -> Comparator.comparing(TourCategoryResponse::active);
-            default -> Comparator.comparing(TourCategoryResponse::name, String.CASE_INSENSITIVE_ORDER);
-        };
-        return descending ? comparator.reversed() : comparator;
+        return PageResponse.of(content, safePage, safeSize, result.totalElements(), sortBy, sortDir, query);
     }
     private TourCategoryResponse toResponse(TourRevenueCategory c) { return new TourCategoryResponse(c.getId(), c.getCode(), c.getName(), c.isActive()); }
 }

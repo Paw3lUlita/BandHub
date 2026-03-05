@@ -1,6 +1,7 @@
 package com.bandhub.zsi.fan;
 
 import com.bandhub.zsi.fan.domain.FanDevice;
+import com.bandhub.zsi.shared.api.PagedResult;
 
 import java.util.List;
 import java.util.Optional;
@@ -10,5 +11,6 @@ public interface FanDeviceRepository {
     FanDevice save(FanDevice fanDevice);
     Optional<FanDevice> findById(UUID id);
     List<FanDevice> findAll();
+    PagedResult<FanDevice> findPage(int page, int size, String sortBy, String sortDir, String q);
     void deleteById(UUID id);
 }

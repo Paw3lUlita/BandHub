@@ -12,7 +12,6 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
@@ -70,30 +69,11 @@ public class TicketOrderItemAdminService {
 
     @Transactional(readOnly = true)
     public PageResponse<TicketOrderItemResponse> getPage(int page, int size, String sortBy, String sortDir, String query) {
-        String normalizedQuery = query == null ? "" : query.trim().toLowerCase();
-        boolean descending = "desc".equalsIgnoreCase(sortDir);
-        List<TicketOrderItemResponse> filtered = ticketOrderItemRepository.findAll().stream()
-                .map(this::toResponse)
-                .filter(item -> normalizedQuery.isBlank()
-                        || item.ticketOrderId().toString().toLowerCase().contains(normalizedQuery)
-                        || item.ticketPoolId().toString().toLowerCase().contains(normalizedQuery))
-                .sorted(resolveComparator(sortBy, descending))
-                .toList();
+        var result = ticketOrderItemRepository.findPage(page, size, sortBy, sortDir, query);
+        List<TicketOrderItemResponse> content = result.content().stream().map(this::toResponse).toList();
         int safePage = Math.max(page, 0);
         int safeSize = Math.max(size, 1);
-        int fromIndex = safePage * safeSize;
-        int toIndex = Math.min(fromIndex + safeSize, filtered.size());
-        List<TicketOrderItemResponse> content = fromIndex >= filtered.size() ? List.of() : filtered.subList(fromIndex, toIndex);
-        return PageResponse.of(content, safePage, safeSize, filtered.size(), sortBy, sortDir, query);
-    }
-
-    private Comparator<TicketOrderItemResponse> resolveComparator(String sortBy, boolean descending) {
-        Comparator<TicketOrderItemResponse> comparator = switch (sortBy) {
-            case "quantity" -> Comparator.comparing(TicketOrderItemResponse::quantity);
-            case "unitPrice" -> Comparator.comparing(TicketOrderItemResponse::unitPrice);
-            default -> Comparator.comparing(TicketOrderItemResponse::id);
-        };
-        return descending ? comparator.reversed() : comparator;
+        return PageResponse.of(content, safePage, safeSize, result.totalElements(), sortBy, sortDir, query);
     }
 
     private TicketOrderItemResponse toResponse(TicketOrderItem item) {

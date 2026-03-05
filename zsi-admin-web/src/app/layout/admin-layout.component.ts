@@ -55,6 +55,18 @@ import { OidcSecurityService } from 'angular-auth-oidc-client';
           <li>
             <a routerLink="/admin/orders" routerLinkActive="active">Zamówienia</a>
           </li>
+          <li>
+            <a routerLink="/admin/payments" routerLinkActive="active">Płatności</a>
+          </li>
+          <li>
+            <a routerLink="/admin/payment-transactions" routerLinkActive="active">Transakcje płatności</a>
+          </li>
+          <li>
+            <a routerLink="/admin/shipments" routerLinkActive="active">Wysyłki</a>
+          </li>
+          <li>
+            <a routerLink="/admin/order-status-history" routerLinkActive="active">Historia statusów</a>
+          </li>
 
           <li class="menu-title mt-4">Ticketing & Trasa</li>
           <li>
@@ -62,6 +74,21 @@ import { OidcSecurityService } from 'angular-auth-oidc-client';
           </li>
           <li>
             <a routerLink="/admin/venues" routerLinkActive="active">Miejsca</a>
+          </li>
+          <li>
+            <a routerLink="/admin/ticket-orders" routerLinkActive="active">Zamówienia biletów</a>
+          </li>
+          <li>
+            <a routerLink="/admin/ticket-order-items" routerLinkActive="active">Pozycje zamówień</a>
+          </li>
+          <li>
+            <a routerLink="/admin/ticket-codes" routerLinkActive="active">Kody biletów</a>
+          </li>
+          <li>
+            <a routerLink="/admin/ticket-validations" routerLinkActive="active">Walidacje</a>
+          </li>
+          <li>
+            <a routerLink="/admin/ticket-refunds" routerLinkActive="active">Zwroty biletów</a>
           </li>
 
           <li class="menu-title mt-4">CMS / Treści</li>
@@ -72,9 +99,49 @@ import { OidcSecurityService } from 'angular-auth-oidc-client';
             <a routerLink="/admin/gallery" routerLinkActive="active">Galeria Zdjęć</a>
           </li>
 
+          <li class="menu-title mt-4">Fan / Mobile</li>
+          <li>
+            <a routerLink="/admin/setlists" routerLinkActive="active">Setlisty</a>
+          </li>
+          <li>
+            <a routerLink="/admin/setlist-items" routerLinkActive="active">Pozycje setlist</a>
+          </li>
+          <li>
+            <a routerLink="/admin/fan-favorites" routerLinkActive="active">Ulubione fanów</a>
+          </li>
+          <li>
+            <a routerLink="/admin/fan-notifications" routerLinkActive="active">Powiadomienia</a>
+          </li>
+          <li>
+            <a routerLink="/admin/fan-notification-reads" routerLinkActive="active">Odczytane powiadomienia</a>
+          </li>
+          <li>
+            <a routerLink="/admin/fan-devices" routerLinkActive="active">Urządzenia fanów</a>
+          </li>
+
           <li class="menu-title mt-4">Logistyka & Finanse</li>
           <li>
             <a routerLink="/admin/logistics" routerLinkActive="active">Trasy Koncertowe</a>
+          </li>
+          <li>
+            <a routerLink="/admin/tour-legs" routerLinkActive="active">Odcinki trasy</a>
+          </li>
+          <li>
+            <a routerLink="/admin/tour-cost-categories" routerLinkActive="active">Kategorie kosztów</a>
+          </li>
+          <li>
+            <a routerLink="/admin/tour-revenue-categories" routerLinkActive="active">Kategorie przychodów</a>
+          </li>
+          <li>
+            <a routerLink="/admin/tour-settlements" routerLinkActive="active">Rozliczenia tras</a>
+          </li>
+
+          <li class="menu-title mt-4">Raportowanie</li>
+          <li>
+            <a routerLink="/admin/report-runs" routerLinkActive="active">Uruchomienia raportów</a>
+          </li>
+          <li>
+            <a routerLink="/admin/export-jobs" routerLinkActive="active">Zadania eksportu</a>
           </li>
 
         </ul>

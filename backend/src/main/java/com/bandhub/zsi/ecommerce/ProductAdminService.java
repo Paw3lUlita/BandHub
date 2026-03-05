@@ -11,7 +11,6 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
@@ -95,40 +94,11 @@ public class ProductAdminService {
 
     @Transactional(readOnly = true)
     public PageResponse<ProductResponse> getProductsPage(int page, int size, String sortBy, String sortDir, String query) {
-        String normalizedQuery = query == null ? "" : query.trim().toLowerCase();
-        boolean descending = "desc".equalsIgnoreCase(sortDir);
-
-        List<ProductResponse> filtered = productRepository.findAll().stream()
-                .map(this::toResponse)
-                .filter(product -> normalizedQuery.isBlank()
-                        || product.name().toLowerCase().contains(normalizedQuery)
-                        || (product.description() != null && product.description().toLowerCase().contains(normalizedQuery))
-                        || (product.categoryName() != null && product.categoryName().toLowerCase().contains(normalizedQuery)))
-                .sorted(resolveComparator(sortBy, descending))
-                .toList();
-
+        var result = productRepository.findPage(page, size, sortBy, sortDir, query);
+        List<ProductResponse> content = result.content().stream().map(this::toResponse).toList();
         int safePage = Math.max(page, 0);
         int safeSize = Math.max(size, 1);
-        int fromIndex = safePage * safeSize;
-        int toIndex = Math.min(fromIndex + safeSize, filtered.size());
-
-        List<ProductResponse> content = fromIndex >= filtered.size()
-                ? List.of()
-                : filtered.subList(fromIndex, toIndex);
-
-        return PageResponse.of(content, safePage, safeSize, filtered.size(), sortBy, sortDir, query);
-    }
-
-    private Comparator<ProductResponse> resolveComparator(String sortBy, boolean descending) {
-        Comparator<ProductResponse> comparator = switch (sortBy) {
-            case "price" -> Comparator.comparing(ProductResponse::price);
-            case "stockQuantity" -> Comparator.comparing(ProductResponse::stockQuantity);
-            case "categoryName" -> Comparator.comparing(p -> p.categoryName() == null ? "" : p.categoryName());
-            case "name" -> Comparator.comparing(ProductResponse::name, String.CASE_INSENSITIVE_ORDER);
-            default -> Comparator.comparing(ProductResponse::name, String.CASE_INSENSITIVE_ORDER);
-        };
-
-        return descending ? comparator.reversed() : comparator;
+        return PageResponse.of(content, safePage, safeSize, result.totalElements(), sortBy, sortDir, query);
     }
 
     private ProductResponse toResponse(Product product) {

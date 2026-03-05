@@ -9,7 +9,6 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
@@ -66,37 +65,11 @@ public class TicketCodeAdminService {
 
     @Transactional(readOnly = true)
     public PageResponse<TicketCodeResponse> getPage(int page, int size, String sortBy, String sortDir, String query) {
-        String normalizedQuery = query == null ? "" : query.trim().toLowerCase();
-        boolean descending = "desc".equalsIgnoreCase(sortDir);
-
-        List<TicketCodeResponse> filtered = ticketCodeRepository.findAll().stream()
-                .map(this::toResponse)
-                .filter(code -> normalizedQuery.isBlank()
-                        || code.codeValue().toLowerCase().contains(normalizedQuery)
-                        || code.status().toLowerCase().contains(normalizedQuery)
-                        || code.ticketId().toString().toLowerCase().contains(normalizedQuery))
-                .sorted(resolveComparator(sortBy, descending))
-                .toList();
-
+        var result = ticketCodeRepository.findPage(page, size, sortBy, sortDir, query);
+        List<TicketCodeResponse> content = result.content().stream().map(this::toResponse).toList();
         int safePage = Math.max(page, 0);
         int safeSize = Math.max(size, 1);
-        int fromIndex = safePage * safeSize;
-        int toIndex = Math.min(fromIndex + safeSize, filtered.size());
-        List<TicketCodeResponse> content = fromIndex >= filtered.size()
-                ? List.of()
-                : filtered.subList(fromIndex, toIndex);
-
-        return PageResponse.of(content, safePage, safeSize, filtered.size(), sortBy, sortDir, query);
-    }
-
-    private Comparator<TicketCodeResponse> resolveComparator(String sortBy, boolean descending) {
-        Comparator<TicketCodeResponse> comparator = switch (sortBy) {
-            case "status" -> Comparator.comparing(TicketCodeResponse::status, String.CASE_INSENSITIVE_ORDER);
-            case "codeValue" -> Comparator.comparing(TicketCodeResponse::codeValue, String.CASE_INSENSITIVE_ORDER);
-            case "generatedAt" -> Comparator.comparing(TicketCodeResponse::generatedAt, Comparator.nullsLast(Comparator.naturalOrder()));
-            default -> Comparator.comparing(TicketCodeResponse::generatedAt, Comparator.nullsLast(Comparator.naturalOrder()));
-        };
-        return descending ? comparator.reversed() : comparator;
+        return PageResponse.of(content, safePage, safeSize, result.totalElements(), sortBy, sortDir, query);
     }
 
     private TicketCodeResponse toResponse(TicketCode code) {

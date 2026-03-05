@@ -1,6 +1,5 @@
 package com.bandhub.zsi.user.adapter;
 
-import lombok.RequiredArgsConstructor;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;

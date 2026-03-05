@@ -10,7 +10,6 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
@@ -61,30 +60,11 @@ public class SetlistItemAdminService {
 
     @Transactional(readOnly = true)
     public PageResponse<SetlistItemResponse> getPage(int page, int size, String sortBy, String sortDir, String query) {
-        String normalizedQuery = query == null ? "" : query.trim().toLowerCase();
-        boolean descending = "desc".equalsIgnoreCase(sortDir);
-        List<SetlistItemResponse> filtered = setlistItemRepository.findAll().stream()
-                .map(this::toResponse)
-                .filter(item -> normalizedQuery.isBlank()
-                        || item.songTitle().toLowerCase().contains(normalizedQuery)
-                        || item.setlistId().toString().toLowerCase().contains(normalizedQuery))
-                .sorted(resolveComparator(sortBy, descending))
-                .toList();
+        var result = setlistItemRepository.findPage(page, size, sortBy, sortDir, query);
+        List<SetlistItemResponse> content = result.content().stream().map(this::toResponse).toList();
         int safePage = Math.max(page, 0);
         int safeSize = Math.max(size, 1);
-        int fromIndex = safePage * safeSize;
-        int toIndex = Math.min(fromIndex + safeSize, filtered.size());
-        List<SetlistItemResponse> content = fromIndex >= filtered.size() ? List.of() : filtered.subList(fromIndex, toIndex);
-        return PageResponse.of(content, safePage, safeSize, filtered.size(), sortBy, sortDir, query);
-    }
-
-    private Comparator<SetlistItemResponse> resolveComparator(String sortBy, boolean descending) {
-        Comparator<SetlistItemResponse> comparator = switch (sortBy) {
-            case "songOrder" -> Comparator.comparing(SetlistItemResponse::songOrder);
-            case "songTitle" -> Comparator.comparing(SetlistItemResponse::songTitle, String.CASE_INSENSITIVE_ORDER);
-            default -> Comparator.comparing(SetlistItemResponse::songOrder);
-        };
-        return descending ? comparator.reversed() : comparator;
+        return PageResponse.of(content, safePage, safeSize, result.totalElements(), sortBy, sortDir, query);
     }
 
     private SetlistItemResponse toResponse(SetlistItem item) {

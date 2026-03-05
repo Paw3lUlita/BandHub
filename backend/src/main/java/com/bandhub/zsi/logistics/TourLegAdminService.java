@@ -10,7 +10,6 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
@@ -60,32 +59,11 @@ public class TourLegAdminService {
 
     @Transactional(readOnly = true)
     public PageResponse<TourLegResponse> getPage(int page, int size, String sortBy, String sortDir, String query) {
-        String normalizedQuery = query == null ? "" : query.trim().toLowerCase();
-        boolean descending = "desc".equalsIgnoreCase(sortDir);
-        List<TourLegResponse> filtered = tourLegRepository.findAll().stream()
-                .map(this::toResponse)
-                .filter(item -> normalizedQuery.isBlank()
-                        || item.city().toLowerCase().contains(normalizedQuery)
-                        || (item.venueName() != null && item.venueName().toLowerCase().contains(normalizedQuery))
-                        || item.tourId().toString().toLowerCase().contains(normalizedQuery))
-                .sorted(resolveComparator(sortBy, descending))
-                .toList();
+        var result = tourLegRepository.findPage(page, size, sortBy, sortDir, query);
+        List<TourLegResponse> content = result.content().stream().map(this::toResponse).toList();
         int safePage = Math.max(page, 0);
         int safeSize = Math.max(size, 1);
-        int fromIndex = safePage * safeSize;
-        int toIndex = Math.min(fromIndex + safeSize, filtered.size());
-        List<TourLegResponse> content = fromIndex >= filtered.size() ? List.of() : filtered.subList(fromIndex, toIndex);
-        return PageResponse.of(content, safePage, safeSize, filtered.size(), sortBy, sortDir, query);
-    }
-
-    private Comparator<TourLegResponse> resolveComparator(String sortBy, boolean descending) {
-        Comparator<TourLegResponse> comparator = switch (sortBy) {
-            case "city" -> Comparator.comparing(TourLegResponse::city, String.CASE_INSENSITIVE_ORDER);
-            case "legOrder" -> Comparator.comparing(TourLegResponse::legOrder);
-            case "legDate" -> Comparator.comparing(TourLegResponse::legDate, Comparator.nullsLast(Comparator.naturalOrder()));
-            default -> Comparator.comparing(TourLegResponse::legOrder);
-        };
-        return descending ? comparator.reversed() : comparator;
+        return PageResponse.of(content, safePage, safeSize, result.totalElements(), sortBy, sortDir, query);
     }
 
     private TourLegResponse toResponse(TourLeg leg) {

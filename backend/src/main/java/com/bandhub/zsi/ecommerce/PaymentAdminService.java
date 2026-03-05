@@ -11,7 +11,6 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
@@ -80,38 +79,11 @@ public class PaymentAdminService {
 
     @Transactional(readOnly = true)
     public PageResponse<PaymentResponse> getPage(int page, int size, String sortBy, String sortDir, String query) {
-        String normalizedQuery = query == null ? "" : query.trim().toLowerCase();
-        boolean descending = "desc".equalsIgnoreCase(sortDir);
-
-        List<PaymentResponse> filtered = paymentRepository.findAll().stream()
-                .map(this::toResponse)
-                .filter(payment -> normalizedQuery.isBlank()
-                        || payment.status().toLowerCase().contains(normalizedQuery)
-                        || payment.orderId().toString().toLowerCase().contains(normalizedQuery)
-                        || (payment.provider() != null && payment.provider().toLowerCase().contains(normalizedQuery)))
-                .sorted(resolveComparator(sortBy, descending))
-                .toList();
-
+        var result = paymentRepository.findPage(page, size, sortBy, sortDir, query);
+        List<PaymentResponse> content = result.content().stream().map(this::toResponse).toList();
         int safePage = Math.max(page, 0);
         int safeSize = Math.max(size, 1);
-        int fromIndex = safePage * safeSize;
-        int toIndex = Math.min(fromIndex + safeSize, filtered.size());
-        List<PaymentResponse> content = fromIndex >= filtered.size()
-                ? List.of()
-                : filtered.subList(fromIndex, toIndex);
-
-        return PageResponse.of(content, safePage, safeSize, filtered.size(), sortBy, sortDir, query);
-    }
-
-    private Comparator<PaymentResponse> resolveComparator(String sortBy, boolean descending) {
-        Comparator<PaymentResponse> comparator = switch (sortBy) {
-            case "status" -> Comparator.comparing(PaymentResponse::status, String.CASE_INSENSITIVE_ORDER);
-            case "amount" -> Comparator.comparing(PaymentResponse::amount);
-            case "paidAt" -> Comparator.comparing(PaymentResponse::paidAt, Comparator.nullsLast(Comparator.naturalOrder()));
-            case "createdAt" -> Comparator.comparing(PaymentResponse::createdAt, Comparator.nullsLast(Comparator.naturalOrder()));
-            default -> Comparator.comparing(PaymentResponse::createdAt, Comparator.nullsLast(Comparator.naturalOrder()));
-        };
-        return descending ? comparator.reversed() : comparator;
+        return PageResponse.of(content, safePage, safeSize, result.totalElements(), sortBy, sortDir, query);
     }
 
     private PaymentResponse toResponse(Payment payment) {

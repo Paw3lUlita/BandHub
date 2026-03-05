@@ -10,7 +10,6 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
@@ -75,37 +74,11 @@ public class OrderStatusHistoryAdminService {
 
     @Transactional(readOnly = true)
     public PageResponse<OrderStatusHistoryResponse> getPage(int page, int size, String sortBy, String sortDir, String query) {
-        String normalizedQuery = query == null ? "" : query.trim().toLowerCase();
-        boolean descending = "desc".equalsIgnoreCase(sortDir);
-
-        List<OrderStatusHistoryResponse> filtered = orderStatusHistoryRepository.findAll().stream()
-                .map(this::toResponse)
-                .filter(item -> normalizedQuery.isBlank()
-                        || item.newStatus().toLowerCase().contains(normalizedQuery)
-                        || (item.oldStatus() != null && item.oldStatus().toLowerCase().contains(normalizedQuery))
-                        || (item.changedBy() != null && item.changedBy().toLowerCase().contains(normalizedQuery))
-                        || item.orderId().toString().toLowerCase().contains(normalizedQuery))
-                .sorted(resolveComparator(sortBy, descending))
-                .toList();
-
+        var result = orderStatusHistoryRepository.findPage(page, size, sortBy, sortDir, query);
+        List<OrderStatusHistoryResponse> content = result.content().stream().map(this::toResponse).toList();
         int safePage = Math.max(page, 0);
         int safeSize = Math.max(size, 1);
-        int fromIndex = safePage * safeSize;
-        int toIndex = Math.min(fromIndex + safeSize, filtered.size());
-        List<OrderStatusHistoryResponse> content = fromIndex >= filtered.size()
-                ? List.of()
-                : filtered.subList(fromIndex, toIndex);
-
-        return PageResponse.of(content, safePage, safeSize, filtered.size(), sortBy, sortDir, query);
-    }
-
-    private Comparator<OrderStatusHistoryResponse> resolveComparator(String sortBy, boolean descending) {
-        Comparator<OrderStatusHistoryResponse> comparator = switch (sortBy) {
-            case "newStatus" -> Comparator.comparing(OrderStatusHistoryResponse::newStatus, String.CASE_INSENSITIVE_ORDER);
-            case "changedAt" -> Comparator.comparing(OrderStatusHistoryResponse::changedAt, Comparator.nullsLast(Comparator.naturalOrder()));
-            default -> Comparator.comparing(OrderStatusHistoryResponse::changedAt, Comparator.nullsLast(Comparator.naturalOrder()));
-        };
-        return descending ? comparator.reversed() : comparator;
+        return PageResponse.of(content, safePage, safeSize, result.totalElements(), sortBy, sortDir, query);
     }
 
     private OrderStatusHistoryResponse toResponse(OrderStatusHistory history) {
