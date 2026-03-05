@@ -11,6 +11,7 @@ export interface Shipment {
   shippedAt: string | null;
   deliveredAt: string | null;
   createdAt: string;
+  deliveryAddress: string | null;
 }
 
 export interface PageResponse<T> {
@@ -32,6 +33,7 @@ export interface CreateShipmentRequest {
   status: string;
   shippedAt: string | null;
   deliveredAt: string | null;
+  deliveryAddress?: string | null;
 }
 
 @Injectable({ providedIn: 'root' })

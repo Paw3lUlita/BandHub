@@ -35,6 +35,11 @@ class SqlShipmentRepository implements ShipmentRepository {
     }
 
     @Override
+    public List<Shipment> findByOrderId(UUID orderId) {
+        return jpaRepository.findByOrder_IdOrderByCreatedAtDesc(orderId);
+    }
+
+    @Override
     public List<Shipment> findAll() {
         return jpaRepository.findAll();
     }
@@ -60,6 +65,8 @@ class SqlShipmentRepository implements ShipmentRepository {
 }
 
 interface JpaShipmentRepository extends JpaRepository<Shipment, UUID> {
+
+    List<Shipment> findByOrder_IdOrderByCreatedAtDesc(UUID orderId);
 
     @Query("SELECT s FROM Shipment s WHERE LOWER(s.status) LIKE LOWER(:pattern) " +
             "OR LOWER(COALESCE(s.carrier, '')) LIKE LOWER(:pattern) " +

@@ -151,6 +151,9 @@ import { OidcSecurityService } from 'angular-auth-oidc-client';
 
           <li class="menu-title mt-4">Raportowanie</li>
           <li>
+            <a routerLink="/admin/reports/merch" routerLinkActive="active">Raport merchu</a>
+          </li>
+          <li>
             <a routerLink="/admin/report-runs" routerLinkActive="active">Uruchomienia raportów</a>
           </li>
           <li>

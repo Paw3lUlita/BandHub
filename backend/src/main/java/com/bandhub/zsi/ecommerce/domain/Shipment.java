@@ -37,7 +37,10 @@ public class Shipment {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    public static Shipment create(UUID id, Order order, String carrier, String trackingNumber, String status, LocalDateTime shippedAt, LocalDateTime deliveredAt) {
+    @Column(name = "delivery_address", length = 500)
+    private String deliveryAddress;
+
+    public static Shipment create(UUID id, Order order, String carrier, String trackingNumber, String status, LocalDateTime shippedAt, LocalDateTime deliveredAt, String deliveryAddress) {
         Shipment shipment = new Shipment();
         shipment.id = id;
         shipment.order = order;
@@ -46,15 +49,17 @@ public class Shipment {
         shipment.status = status;
         shipment.shippedAt = shippedAt;
         shipment.deliveredAt = deliveredAt;
+        shipment.deliveryAddress = deliveryAddress;
         shipment.createdAt = LocalDateTime.now();
         return shipment;
     }
 
-    public void update(String carrier, String trackingNumber, String status, LocalDateTime shippedAt, LocalDateTime deliveredAt) {
+    public void update(String carrier, String trackingNumber, String status, LocalDateTime shippedAt, LocalDateTime deliveredAt, String deliveryAddress) {
         this.carrier = carrier;
         this.trackingNumber = trackingNumber;
         this.status = status;
         this.shippedAt = shippedAt;
         this.deliveredAt = deliveredAt;
+        this.deliveryAddress = deliveryAddress;
     }
 }

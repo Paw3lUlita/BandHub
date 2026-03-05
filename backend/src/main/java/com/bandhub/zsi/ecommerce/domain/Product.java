@@ -75,4 +75,11 @@ public class Product {
         }
         this.stockQuantity = this.stockQuantity - quantity;
     }
+
+    public void restoreStock(int quantity) {
+        if (quantity <= 0) {
+            throw new IllegalArgumentException("Quantity to restore must be positive");
+        }
+        this.stockQuantity = this.stockQuantity + quantity;
+    }
 }

@@ -195,6 +195,7 @@ export const routes: Routes = [
       { path: 'tour-settlements', loadComponent: () => import('./features/logistics/tour-settlements/tour-settlement-list.component').then(m => m.TourSettlementListComponent) },
       { path: 'tour-settlements/new', loadComponent: () => import('./features/shared/form-placeholder.component').then(m => m.FormPlaceholderComponent) },
       { path: 'tour-settlements/:id', loadComponent: () => import('./features/shared/form-placeholder.component').then(m => m.FormPlaceholderComponent) },
+      { path: 'reports/merch', loadComponent: () => import('./features/reporting/merch-report.component').then(m => m.MerchReportComponent) },
       { path: 'report-runs', loadComponent: () => import('./features/reporting/report-runs/report-run-list.component').then(m => m.ReportRunListComponent) },
       { path: 'report-runs/new', loadComponent: () => import('./features/shared/form-placeholder.component').then(m => m.FormPlaceholderComponent) },
       { path: 'report-runs/:id', loadComponent: () => import('./features/shared/form-placeholder.component').then(m => m.FormPlaceholderComponent) },

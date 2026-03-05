@@ -10,6 +10,7 @@ import java.util.UUID;
 public interface ShipmentRepository {
     Shipment save(Shipment shipment);
     Optional<Shipment> findById(UUID id);
+    List<Shipment> findByOrderId(UUID orderId);
     List<Shipment> findAll();
     PagedResult<Shipment> findPage(int page, int size, String sortBy, String sortDir, String q);
     void deleteById(UUID id);

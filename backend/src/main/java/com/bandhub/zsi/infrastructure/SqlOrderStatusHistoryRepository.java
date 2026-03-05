@@ -35,6 +35,11 @@ class SqlOrderStatusHistoryRepository implements OrderStatusHistoryRepository {
     }
 
     @Override
+    public List<OrderStatusHistory> findByOrderIdOrderByChangedAtDesc(UUID orderId) {
+        return jpaRepository.findByOrder_IdOrderByChangedAtDesc(orderId);
+    }
+
+    @Override
     public List<OrderStatusHistory> findAll() {
         return jpaRepository.findAll();
     }
@@ -56,6 +61,8 @@ class SqlOrderStatusHistoryRepository implements OrderStatusHistoryRepository {
 }
 
 interface JpaOrderStatusHistoryRepository extends JpaRepository<OrderStatusHistory, UUID> {
+
+    List<OrderStatusHistory> findByOrder_IdOrderByChangedAtDesc(UUID orderId);
 
     @Query("SELECT osh FROM OrderStatusHistory osh WHERE LOWER(osh.newStatus) LIKE LOWER(:pattern) " +
             "OR LOWER(COALESCE(osh.oldStatus, '')) LIKE LOWER(:pattern) " +

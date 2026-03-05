@@ -13,5 +13,8 @@ public record OrderDetailsResponse(
         BigDecimal totalAmount,
         String currency,
         String userId,
-        List<OrderItemDto> items
+        List<OrderItemDto> items,
+        PaymentResponse payment,
+        ShipmentResponse shipment,
+        List<OrderStatusHistoryResponse> statusHistory
 ) {}

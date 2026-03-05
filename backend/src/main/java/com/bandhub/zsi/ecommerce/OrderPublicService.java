@@ -2,6 +2,7 @@ package com.bandhub.zsi.ecommerce;
 
 import com.bandhub.zsi.ecommerce.domain.*;
 import com.bandhub.zsi.ecommerce.dto.PlaceOrderCommand;
+import com.bandhub.zsi.shared.Money;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,42 +16,69 @@ public class OrderPublicService {
 
     private final ProductRepository productRepository;
     private final OrderRepository orderRepository;
+    private final PaymentRepository paymentRepository;
+    private final ShipmentRepository shipmentRepository;
 
-    public OrderPublicService(ProductRepository productRepository, OrderRepository orderRepository) {
+    public OrderPublicService(
+            ProductRepository productRepository,
+            OrderRepository orderRepository,
+            PaymentRepository paymentRepository,
+            ShipmentRepository shipmentRepository
+    ) {
         this.productRepository = productRepository;
         this.orderRepository = orderRepository;
+        this.paymentRepository = paymentRepository;
+        this.shipmentRepository = shipmentRepository;
     }
 
-    @Transactional // KLUCZOWE: Cała metoda to jedna transakcja w bazie.
+    @Transactional
     public UUID placeOrder(PlaceOrderCommand command, String userId) {
         List<OrderItem> orderItems = new ArrayList<>();
 
-        // 1. Przetwarzamy każdy produkt z koszyka
         command.items().forEach((productId, quantity) -> {
-
-            // A. Pobieramy produkt (blokujemy go w kontekście transakcji)
             Product product = productRepository.findById(productId)
                     .orElseThrow(() -> new EntityNotFoundException("Product not found: " + productId));
 
-            // B. Zdejmujemy ze stanu (rzuca wyjątek, jeśli quantity > stock)
-            // Dzięki @Transactional, ten stan zapisze się w bazie automatycznie na końcu metody!
             product.reduceStock(quantity);
 
-            // C. Tworzymy pozycję zamówienia (Snapshot ceny z momentu zakupu)
             OrderItem item = new OrderItem(
                     product.getId(),
                     product.getName(),
-                    product.getPrice(), // Kopiujemy obecną cenę
+                    product.getPrice(),
                     quantity
             );
             orderItems.add(item);
         });
 
-        // 2. Tworzymy zamówienie (Agregat przelicza sumę całkowitą)
         Order order = Order.create(userId, orderItems);
-
-        // 3. Zapisujemy zamówienie
         orderRepository.save(order);
+
+        Money total = order.getTotalAmount();
+        String provider = command.paymentProvider() != null && !command.paymentProvider().isBlank()
+                ? command.paymentProvider() : "pending";
+
+        Payment payment = Payment.create(
+                UUID.randomUUID(),
+                order,
+                provider,
+                null,
+                "PENDING",
+                total,
+                null
+        );
+        paymentRepository.save(payment);
+
+        Shipment shipment = Shipment.create(
+                UUID.randomUUID(),
+                order,
+                null,
+                null,
+                "PENDING",
+                null,
+                null,
+                command.deliveryAddress()
+        );
+        shipmentRepository.save(shipment);
 
         return order.getId();
     }

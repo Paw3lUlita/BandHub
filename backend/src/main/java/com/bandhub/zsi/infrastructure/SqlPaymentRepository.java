@@ -35,6 +35,11 @@ class SqlPaymentRepository implements PaymentRepository {
     }
 
     @Override
+    public List<Payment> findByOrderId(UUID orderId) {
+        return jpaRepository.findByOrder_IdOrderByCreatedAtDesc(orderId);
+    }
+
+    @Override
     public List<Payment> findAll() {
         return jpaRepository.findAll();
     }
@@ -61,6 +66,8 @@ class SqlPaymentRepository implements PaymentRepository {
 }
 
 interface JpaPaymentRepository extends JpaRepository<Payment, UUID> {
+
+    List<Payment> findByOrder_IdOrderByCreatedAtDesc(UUID orderId);
 
     @Query("SELECT p FROM Payment p JOIN p.order o WHERE LOWER(p.status) LIKE LOWER(:pattern) " +
             "OR LOWER(COALESCE(p.provider, '')) LIKE LOWER(:pattern)")

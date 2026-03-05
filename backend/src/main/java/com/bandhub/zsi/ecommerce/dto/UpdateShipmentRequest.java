@@ -9,5 +9,6 @@ public record UpdateShipmentRequest(
         String trackingNumber,
         @NotBlank String status,
         LocalDateTime shippedAt,
-        LocalDateTime deliveredAt
+        LocalDateTime deliveredAt,
+        String deliveryAddress
 ) {}

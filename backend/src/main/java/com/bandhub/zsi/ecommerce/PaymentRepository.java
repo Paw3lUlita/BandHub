@@ -10,6 +10,7 @@ import java.util.UUID;
 public interface PaymentRepository {
     Payment save(Payment payment);
     Optional<Payment> findById(UUID id);
+    List<Payment> findByOrderId(UUID orderId);
     List<Payment> findAll();
     PagedResult<Payment> findPage(int page, int size, String sortBy, String sortDir, String q);
     void deleteById(UUID id);

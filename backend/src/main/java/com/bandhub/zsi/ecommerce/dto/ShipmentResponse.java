@@ -11,5 +11,6 @@ public record ShipmentResponse(
         String status,
         LocalDateTime shippedAt,
         LocalDateTime deliveredAt,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        String deliveryAddress
 ) {}

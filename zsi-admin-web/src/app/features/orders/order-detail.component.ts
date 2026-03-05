@@ -36,6 +36,51 @@ import { Observable } from 'rxjs';
           </div>
         </div>
 
+        @if (order.payment) {
+          <div class="card bg-base-100 shadow-xl mb-6">
+            <div class="card-body">
+              <h3 class="card-title text-sm uppercase text-gray-400">Płatność</h3>
+              <p><span class="font-medium">Status:</span> {{ order.payment.status }}</p>
+              <p><span class="font-medium">Kwota:</span> {{ order.payment.amount | currency:order.payment.currency }}</p>
+              @if (order.payment.provider) { <p><span class="font-medium">Provider:</span> {{ order.payment.provider }}</p> }
+            </div>
+          </div>
+        }
+
+        @if (order.shipment) {
+          <div class="card bg-base-100 shadow-xl mb-6">
+            <div class="card-body">
+              <h3 class="card-title text-sm uppercase text-gray-400">Wysyłka</h3>
+              <p><span class="font-medium">Status:</span> {{ order.shipment.status }}</p>
+              @if (order.shipment.carrier) { <p><span class="font-medium">Przewoźnik:</span> {{ order.shipment.carrier }}</p> }
+              @if (order.shipment.trackingNumber) { <p><span class="font-medium">Nr śledzenia:</span> {{ order.shipment.trackingNumber }}</p> }
+              @if (order.shipment.deliveryAddress) { <p><span class="font-medium">Adres:</span> {{ order.shipment.deliveryAddress }}</p> }
+            </div>
+          </div>
+        }
+
+        @if (order.statusHistory?.length) {
+          <div class="card bg-base-100 shadow-xl mb-6">
+            <div class="card-body">
+              <h3 class="card-title text-sm uppercase text-gray-400">Historia statusów</h3>
+              <ul class="timeline timeline-vertical">
+                @for (h of order.statusHistory; track h.id) {
+                  <li>
+                    <hr/>
+                    <div class="timeline-start">{{ h.oldStatus || '—' }} → {{ h.newStatus }}</div>
+                    <div class="timeline-middle">●</div>
+                    <div class="timeline-end timeline-box">
+                      {{ h.changedAt | date:'short' }}
+                      @if (h.changedBy) { <span class="text-xs opacity-70">({{ h.changedBy }})</span> }
+                    </div>
+                    <hr/>
+                  </li>
+                }
+              </ul>
+            </div>
+          </div>
+        }
+
         <div class="card bg-base-100 shadow-xl overflow-hidden">
           <div class="card-body p-0">
             <table class="table table-zebra w-full">

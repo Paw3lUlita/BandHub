@@ -36,7 +36,8 @@ public class ShipmentAdminService {
                 request.trackingNumber(),
                 request.status(),
                 request.shippedAt(),
-                request.deliveredAt()
+                request.deliveredAt(),
+                request.deliveryAddress()
         );
 
         return shipmentRepository.save(shipment).getId();
@@ -50,7 +51,8 @@ public class ShipmentAdminService {
                 request.trackingNumber(),
                 request.status(),
                 request.shippedAt(),
-                request.deliveredAt()
+                request.deliveredAt(),
+                request.deliveryAddress()
         );
     }
 
@@ -93,7 +95,8 @@ public class ShipmentAdminService {
                 shipment.getStatus(),
                 shipment.getShippedAt(),
                 shipment.getDeliveredAt(),
-                shipment.getCreatedAt()
+                shipment.getCreatedAt(),
+                shipment.getDeliveryAddress()
         );
     }
 }

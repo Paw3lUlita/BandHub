@@ -5,7 +5,9 @@ import { Observable } from 'rxjs';
 // DTO - definicje typów zgodne z Backendem
 export enum OrderStatus {
   NEW = 'NEW',
+  PAID = 'PAID',
   SHIPPED = 'SHIPPED',
+  DELIVERED = 'DELIVERED',
   CANCELLED = 'CANCELLED'
 }
 
@@ -30,6 +32,40 @@ export interface OrderItem {
   lineTotal: number;
 }
 
+export interface PaymentSummary {
+  id: string;
+  orderId: string;
+  provider: string | null;
+  providerPaymentId: string | null;
+  status: string;
+  amount: number;
+  currency: string;
+  paidAt: string | null;
+  createdAt: string;
+}
+
+export interface ShipmentSummary {
+  id: string;
+  orderId: string;
+  carrier: string | null;
+  trackingNumber: string | null;
+  status: string;
+  shippedAt: string | null;
+  deliveredAt: string | null;
+  createdAt: string;
+  deliveryAddress: string | null;
+}
+
+export interface OrderStatusHistoryItem {
+  id: string;
+  orderId: string;
+  oldStatus: string | null;
+  newStatus: string;
+  changedBy: string | null;
+  changedAt: string;
+  note: string | null;
+}
+
 export interface OrderDetails {
   id: string;
   createdAt: string;
@@ -38,6 +74,9 @@ export interface OrderDetails {
   currency: string;
   userId: string;
   items: OrderItem[];
+  payment: PaymentSummary | null;
+  shipment: ShipmentSummary | null;
+  statusHistory: OrderStatusHistoryItem[];
 }
 
 export interface PageResponse<T> {

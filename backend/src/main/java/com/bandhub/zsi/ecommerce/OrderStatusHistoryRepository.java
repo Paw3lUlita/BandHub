@@ -10,6 +10,7 @@ import java.util.UUID;
 public interface OrderStatusHistoryRepository {
     OrderStatusHistory save(OrderStatusHistory orderStatusHistory);
     Optional<OrderStatusHistory> findById(UUID id);
+    List<OrderStatusHistory> findByOrderIdOrderByChangedAtDesc(UUID orderId);
     List<OrderStatusHistory> findAll();
     PagedResult<OrderStatusHistory> findPage(int page, int size, String sortBy, String sortDir, String q);
     void deleteById(UUID id);
