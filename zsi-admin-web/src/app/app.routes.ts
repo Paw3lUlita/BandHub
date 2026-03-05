@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/auth/auth.guard';
+import { adminGuard } from './core/auth/admin.guard';
 import { AdminLayoutComponent } from './layout/admin-layout.component';
 
 export const routes: Routes = [
@@ -89,6 +90,41 @@ export const routes: Routes = [
       {
         path: 'news/:id',
         loadComponent: () => import('./features/cms/news/news-add.component').then(m => m.NewsAddComponent)
+      },
+      {
+        path: 'users',
+        loadComponent: () => import('./features/users/user-list.component').then(m => m.UserListComponent),
+        canActivate: [adminGuard]
+      },
+      {
+        path: 'users/new',
+        loadComponent: () => import('./features/users/user-add.component').then(m => m.UserAddComponent),
+        canActivate: [adminGuard]
+      },
+      {
+        path: 'users/:id',
+        loadComponent: () => import('./features/users/user-detail.component').then(m => m.UserDetailComponent),
+        canActivate: [adminGuard]
+      },
+      {
+        path: 'roles',
+        loadComponent: () => import('./features/users/role-list.component').then(m => m.RoleListComponent),
+        canActivate: [adminGuard]
+      },
+      {
+        path: 'roles/new',
+        loadComponent: () => import('./features/users/role-add.component').then(m => m.RoleAddComponent),
+        canActivate: [adminGuard]
+      },
+      {
+        path: 'groups',
+        loadComponent: () => import('./features/users/group-list.component').then(m => m.GroupListComponent),
+        canActivate: [adminGuard]
+      },
+      {
+        path: 'groups/new',
+        loadComponent: () => import('./features/users/group-add.component').then(m => m.GroupAddComponent),
+        canActivate: [adminGuard]
       },
       {
         path: 'logistics',

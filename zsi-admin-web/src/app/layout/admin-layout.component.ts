@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { OidcSecurityService } from 'angular-auth-oidc-client';
 
@@ -119,6 +119,19 @@ import { OidcSecurityService } from 'angular-auth-oidc-client';
             <a routerLink="/admin/fan-devices" routerLinkActive="active">Urządzenia fanów</a>
           </li>
 
+          @if (isAdmin()) {
+            <li class="menu-title mt-4">IAM</li>
+            <li>
+              <a routerLink="/admin/users" routerLinkActive="active">Użytkownicy</a>
+            </li>
+            <li>
+              <a routerLink="/admin/roles" routerLinkActive="active">Role</a>
+            </li>
+            <li>
+              <a routerLink="/admin/groups" routerLinkActive="active">Grupy</a>
+            </li>
+          }
+
           <li class="menu-title mt-4">Logistyka & Finanse</li>
           <li>
             <a routerLink="/admin/logistics" routerLinkActive="active">Trasy Koncertowe</a>
@@ -149,8 +162,20 @@ import { OidcSecurityService } from 'angular-auth-oidc-client';
     </div>
   `
 })
-export class AdminLayoutComponent {
+export class AdminLayoutComponent implements OnInit {
   private oidcSecurityService = inject(OidcSecurityService);
+
+  isAdmin = signal(false);
+
+  ngOnInit() {
+    this.oidcSecurityService.getPayloadFromAccessToken().subscribe((payload) => {
+      const realmAccess = payload?.['realm_access'] as { roles?: unknown[] } | undefined;
+      const roles = realmAccess?.roles ?? [];
+      this.isAdmin.set(roles.some((r: unknown) =>
+        String(r).toUpperCase() === 'ADMIN' || String(r) === 'ROLE_ADMIN'
+      ));
+    });
+  }
 
   logout() {
     this.oidcSecurityService.logoff().subscribe();

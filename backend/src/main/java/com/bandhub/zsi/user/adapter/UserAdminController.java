@@ -1,39 +1,102 @@
 package com.bandhub.zsi.user.adapter;
 
-import org.keycloak.admin.client.Keycloak;
-import org.keycloak.representations.idm.RoleRepresentation;
-import org.keycloak.representations.idm.UserRepresentation;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import com.bandhub.zsi.user.UserAdminService;
+import com.bandhub.zsi.user.dto.*;
+import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
 
+import java.net.URI;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin/users")
-public class UserAdminController {
+@PreAuthorize("hasRole('ADMIN')")
+class UserAdminController {
 
-    private final Keycloak keycloak;
+    private final UserAdminService service;
 
-    public UserAdminController(Keycloak keycloak) {
-        this.keycloak = keycloak;
+    UserAdminController(UserAdminService service) {
+        this.service = service;
     }
 
     @GetMapping
-    public List<UserRepresentation> getAllUsers() {
-        return keycloak.realm("bandhub-realm")
-                .users()
-                .list();
+    ResponseEntity<List<UserResponse>> getAllUsers() {
+        return ResponseEntity.ok(service.getAllUsers());
+    }
+
+    @GetMapping("/{id}")
+    ResponseEntity<UserResponse> getUser(@PathVariable String id) {
+        return ResponseEntity.ok(service.getUser(id));
+    }
+
+    @PostMapping
+    ResponseEntity<Void> createUser(@RequestBody @Valid CreateUserRequest request) {
+        String id = service.createUser(request);
+        return ResponseEntity.created(URI.create("/api/admin/users/" + id)).build();
+    }
+
+    @PutMapping("/{id}")
+    ResponseEntity<Void> updateUser(@PathVariable String id, @RequestBody @Valid UpdateUserRequest request) {
+        service.updateUser(id, request.firstName(), request.lastName(), request.email());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/reset-password")
+    ResponseEntity<Void> resetPassword(@PathVariable String id, @RequestBody @Valid ResetPasswordRequest request) {
+        service.resetPassword(id, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/{id}/enabled")
+    ResponseEntity<Void> setEnabled(@PathVariable String id, @RequestBody Map<String, Boolean> body) {
+        Boolean enabled = body.get("enabled");
+        if (enabled == null) {
+            throw new IllegalArgumentException("Pole 'enabled' jest wymagane");
+        }
+        service.setEnabled(id, enabled);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/{id}")
+    ResponseEntity<Void> deleteUser(@PathVariable String id) {
+        service.deleteUser(id);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/{id}/roles")
-    public List<RoleRepresentation> getUserRoles(@PathVariable String id) {
-        return keycloak.realm("bandhub-realm")
-                .users()
-                .get(id)
-                .roles()
-                .realmLevel()
-                .listAll();
+    ResponseEntity<List<RoleResponse>> getUserRoles(@PathVariable String id) {
+        return ResponseEntity.ok(service.getUserRoles(id));
+    }
+
+    @PostMapping("/{id}/roles")
+    ResponseEntity<Void> assignRole(@PathVariable String id, @RequestBody @Valid AssignRoleRequest request) {
+        service.assignRole(id, request.roleName());
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/{id}/roles/{roleName}")
+    ResponseEntity<Void> removeRole(@PathVariable String id, @PathVariable String roleName) {
+        service.removeRole(id, roleName);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{id}/groups")
+    ResponseEntity<List<GroupResponse>> getUserGroups(@PathVariable String id) {
+        return ResponseEntity.ok(service.getUserGroups(id));
+    }
+
+    @PostMapping("/{id}/groups/{groupId}")
+    ResponseEntity<Void> assignGroup(@PathVariable String id, @PathVariable String groupId) {
+        service.assignGroup(id, groupId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/{id}/groups/{groupId}")
+    ResponseEntity<Void> removeGroup(@PathVariable String id, @PathVariable String groupId) {
+        service.removeGroup(id, groupId);
+        return ResponseEntity.noContent().build();
     }
 }
