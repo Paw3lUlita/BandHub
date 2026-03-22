@@ -41,7 +41,14 @@ export class TicketOrderService {
     return this.http.get<TicketOrder[]>(this.apiUrl);
   }
 
-  getPage(params: { page?: number; size?: number; sortBy?: string; sortDir?: string; q?: string }): Observable<PageResponse<TicketOrder>> {
+  getPage(params: {
+    page?: number;
+    size?: number;
+    sortBy?: string;
+    sortDir?: string;
+    q?: string;
+    concertId?: string;
+  }): Observable<PageResponse<TicketOrder>> {
     const p = new URLSearchParams({
       page: String(params.page ?? 0),
       size: String(params.size ?? 10),
@@ -49,6 +56,9 @@ export class TicketOrderService {
       sortDir: params.sortDir ?? 'desc',
       q: params.q ?? ''
     });
+    if (params.concertId) {
+      p.set('concertId', params.concertId);
+    }
     return this.http.get<PageResponse<TicketOrder>>(`${this.apiUrl}/page?${p}`);
   }
 

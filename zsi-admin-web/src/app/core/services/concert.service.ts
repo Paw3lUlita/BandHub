@@ -57,6 +57,34 @@ export interface PageResponse<T> {
   query: string;
 }
 
+export interface TicketPoolSalesRow {
+  poolId: string;
+  poolName: string;
+  sold: number;
+  remaining: number;
+  total: number;
+  revenue: number;
+  currency: string;
+}
+
+export interface ConcertTicketingSummary {
+  concertId: string;
+  concertName: string;
+  venueCapacity: number;
+  totalSold: number;
+  totalRevenue: number;
+  currency: string;
+  pools: TicketPoolSalesRow[];
+}
+
+export interface AttendeeRow {
+  ticketCode: string;
+  userId: string;
+  orderId: string | null;
+  poolName: string;
+  purchaseDate: string | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ConcertService {
   private http = inject(HttpClient);
@@ -90,5 +118,19 @@ export class ConcertService {
 
   getOne(id: string): Observable<ConcertDetails> {
     return this.http.get<ConcertDetails>(`${this.apiUrl}/${id}`);
+  }
+
+  getTicketingSummary(concertId: string): Observable<ConcertTicketingSummary> {
+    return this.http.get<ConcertTicketingSummary>(`${this.apiUrl}/${concertId}/ticketing/summary`);
+  }
+
+  getTicketingAttendees(concertId: string): Observable<AttendeeRow[]> {
+    return this.http.get<AttendeeRow[]>(`${this.apiUrl}/${concertId}/ticketing/attendees`);
+  }
+
+  downloadAttendeesCsv(concertId: string): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/${concertId}/ticketing/attendees/export`, {
+      responseType: 'blob'
+    });
   }
 }

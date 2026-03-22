@@ -33,8 +33,9 @@ class TicketOrderAdminController {
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir,
-            @RequestParam(defaultValue = "") String q
-    ) { return ResponseEntity.ok(service.getPage(page, size, sortBy, sortDir, q)); }
+            @RequestParam(defaultValue = "") String q,
+            @RequestParam(required = false) UUID concertId
+    ) { return ResponseEntity.ok(service.getPage(page, size, sortBy, sortDir, q, concertId)); }
 
     @GetMapping("/{id}")
     ResponseEntity<TicketOrderResponse> getOne(@PathVariable UUID id) { return ResponseEntity.ok(service.getOne(id)); }

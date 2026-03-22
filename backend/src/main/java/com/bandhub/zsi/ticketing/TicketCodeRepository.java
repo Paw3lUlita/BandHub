@@ -9,6 +9,11 @@ import java.util.UUID;
 
 public interface TicketCodeRepository {
     TicketCode save(TicketCode ticketCode);
+
+    Optional<TicketCode> findByCodeValue(String codeValue);
+
+    boolean existsByCodeValue(String codeValue);
+
     Optional<TicketCode> findById(UUID id);
     List<TicketCode> findAll();
     PagedResult<TicketCode> findPage(int page, int size, String sortBy, String sortDir, String q);

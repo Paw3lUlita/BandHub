@@ -90,6 +90,9 @@ import { OidcSecurityService } from 'angular-auth-oidc-client';
           <li>
             <a routerLink="/admin/ticket-refunds" routerLinkActive="active">Zwroty biletów</a>
           </li>
+          <li>
+            <a routerLink="/admin/ticketing/scan" routerLinkActive="active">Skan biletu</a>
+          </li>
 
           <li class="menu-title mt-4">CMS / Treści</li>
           <li>
@@ -152,6 +155,9 @@ import { OidcSecurityService } from 'angular-auth-oidc-client';
           <li class="menu-title mt-4">Raportowanie</li>
           <li>
             <a routerLink="/admin/reports/merch" routerLinkActive="active">Raport merchu</a>
+          </li>
+          <li>
+            <a routerLink="/admin/reports/ticketing-event" routerLinkActive="active">Raport wydarzenia (bilety)</a>
           </li>
           <li>
             <a routerLink="/admin/report-runs" routerLinkActive="active">Uruchomienia raportów</a>

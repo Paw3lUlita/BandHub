@@ -67,8 +67,8 @@ public class TicketOrderAdminService {
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<TicketOrderResponse> getPage(int page, int size, String sortBy, String sortDir, String query) {
-        var result = ticketOrderRepository.findPage(page, size, sortBy, sortDir, query);
+    public PageResponse<TicketOrderResponse> getPage(int page, int size, String sortBy, String sortDir, String query, UUID concertId) {
+        var result = ticketOrderRepository.findPage(page, size, sortBy, sortDir, query, concertId);
         List<TicketOrderResponse> content = result.content().stream().map(this::toResponse).toList();
         int safePage = Math.max(page, 0);
         int safeSize = Math.max(size, 1);

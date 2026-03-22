@@ -11,6 +11,6 @@ public interface TicketOrderRepository {
     TicketOrder save(TicketOrder ticketOrder);
     Optional<TicketOrder> findById(UUID id);
     List<TicketOrder> findAll();
-    PagedResult<TicketOrder> findPage(int page, int size, String sortBy, String sortDir, String q);
+    PagedResult<TicketOrder> findPage(int page, int size, String sortBy, String sortDir, String q, UUID concertId);
     void deleteById(UUID id);
 }

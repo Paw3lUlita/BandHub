@@ -35,8 +35,7 @@ public class Concert {
     @JoinColumn(name = "venue_id") // To pasuje do V1
     private Venue venue;
 
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "concert_id")
+    @OneToMany(mappedBy = "concert", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<TicketPool> ticketPools = new ArrayList<>();
 
     public static Concert plan(String name, LocalDateTime date, Venue venue) {
@@ -65,7 +64,7 @@ public class Concert {
 
     public void configureTicketPool(String poolName, BigDecimal price, String currency, int quantity) {
         Money money = new Money(price, currency);
-        TicketPool pool = new TicketPool(poolName, money, quantity);
+        TicketPool pool = new TicketPool(this, poolName, money, quantity);
         this.ticketPools.add(pool);
     }
 }

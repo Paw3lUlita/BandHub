@@ -18,6 +18,10 @@ public class TicketPool {
     @GeneratedValue
     private UUID id;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "concert_id", nullable = false)
+    private Concert concert;
+
     private String name;
 
     @Embedded
@@ -34,10 +38,24 @@ public class TicketPool {
     private int remainingQuantity;
 
     // Konstruktor pakietowy - tworzy tylko Concert
-    TicketPool(String name, Money price, int quantity) {
+    TicketPool(Concert concert, String name, Money price, int quantity) {
+        this.concert = concert;
         this.name = name;
         this.price = price;
         this.totalQuantity = quantity;
         this.remainingQuantity = quantity;
+    }
+
+    /**
+     * Reserves tickets from the pool for purchase (decrements remaining).
+     */
+    public void reserve(int quantity) {
+        if (quantity <= 0) {
+            throw new IllegalArgumentException("Quantity must be positive");
+        }
+        if (this.remainingQuantity < quantity) {
+            throw new IllegalStateException("Not enough tickets in pool: " + this.name);
+        }
+        this.remainingQuantity -= quantity;
     }
 }

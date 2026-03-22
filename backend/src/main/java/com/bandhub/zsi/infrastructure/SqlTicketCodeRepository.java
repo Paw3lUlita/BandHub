@@ -35,6 +35,16 @@ class SqlTicketCodeRepository implements TicketCodeRepository {
     }
 
     @Override
+    public Optional<TicketCode> findByCodeValue(String codeValue) {
+        return jpaRepository.findByCodeValue(codeValue);
+    }
+
+    @Override
+    public boolean existsByCodeValue(String codeValue) {
+        return jpaRepository.existsByCodeValue(codeValue);
+    }
+
+    @Override
     public List<TicketCode> findAll() {
         return jpaRepository.findAll();
     }
@@ -60,6 +70,10 @@ class SqlTicketCodeRepository implements TicketCodeRepository {
 }
 
 interface JpaTicketCodeRepository extends JpaRepository<TicketCode, UUID> {
+
+    Optional<TicketCode> findByCodeValue(String codeValue);
+
+    boolean existsByCodeValue(String codeValue);
 
     @Query("SELECT t FROM TicketCode t WHERE LOWER(t.codeValue) LIKE LOWER(:pattern) OR LOWER(COALESCE(t.status, '')) LIKE LOWER(:pattern)")
     org.springframework.data.domain.Page<TicketCode> findAllFiltered(@Param("pattern") String pattern, Pageable pageable);

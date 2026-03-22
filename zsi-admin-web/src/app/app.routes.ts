@@ -165,6 +165,10 @@ export const routes: Routes = [
       { path: 'ticket-refunds', loadComponent: () => import('./features/ticketing/ticket-refunds/ticket-refund-list.component').then(m => m.TicketRefundListComponent) },
       { path: 'ticket-refunds/new', loadComponent: () => import('./features/shared/form-placeholder.component').then(m => m.FormPlaceholderComponent) },
       { path: 'ticket-refunds/:id', loadComponent: () => import('./features/shared/form-placeholder.component').then(m => m.FormPlaceholderComponent) },
+      {
+        path: 'ticketing/scan',
+        loadComponent: () => import('./features/ticketing/ticket-scan/ticket-scan.component').then(m => m.TicketScanComponent)
+      },
       { path: 'setlists', loadComponent: () => import('./features/fan/setlists/setlist-list.component').then(m => m.SetlistListComponent) },
       { path: 'setlists/new', loadComponent: () => import('./features/shared/form-placeholder.component').then(m => m.FormPlaceholderComponent) },
       { path: 'setlists/:id', loadComponent: () => import('./features/shared/form-placeholder.component').then(m => m.FormPlaceholderComponent) },
@@ -196,6 +200,11 @@ export const routes: Routes = [
       { path: 'tour-settlements/new', loadComponent: () => import('./features/shared/form-placeholder.component').then(m => m.FormPlaceholderComponent) },
       { path: 'tour-settlements/:id', loadComponent: () => import('./features/shared/form-placeholder.component').then(m => m.FormPlaceholderComponent) },
       { path: 'reports/merch', loadComponent: () => import('./features/reporting/merch-report.component').then(m => m.MerchReportComponent) },
+      {
+        path: 'reports/ticketing-event',
+        loadComponent: () =>
+          import('./features/reporting/ticketing-event-report.component').then(m => m.TicketingEventReportComponent)
+      },
       { path: 'report-runs', loadComponent: () => import('./features/reporting/report-runs/report-run-list.component').then(m => m.ReportRunListComponent) },
       { path: 'report-runs/new', loadComponent: () => import('./features/shared/form-placeholder.component').then(m => m.FormPlaceholderComponent) },
       { path: 'report-runs/:id', loadComponent: () => import('./features/shared/form-placeholder.component').then(m => m.FormPlaceholderComponent) },

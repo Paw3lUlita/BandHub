@@ -55,4 +55,16 @@ public class TicketCode {
         this.activatedAt = activatedAt;
         this.usedAt = usedAt;
     }
+
+    public void markUsed() {
+        if (!"ACTIVE".equalsIgnoreCase(this.status)) {
+            throw new IllegalStateException("Ticket code cannot be used, status=" + this.status);
+        }
+        this.status = "USED";
+        this.usedAt = LocalDateTime.now();
+    }
+
+    public boolean isActive() {
+        return "ACTIVE".equalsIgnoreCase(this.status);
+    }
 }
