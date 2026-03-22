@@ -2,28 +2,39 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { forkJoin } from 'rxjs';
 import {
   CreateCostRequest,
   CreateRevenueRequest,
   LogisticsService,
   TourDetails,
   TourProfitability,
+  TourSettlement,
   UpdateCostRequest,
   UpdateRevenueRequest,
   UpdateTourRequest
 } from '../../core/services/logistics.service';
+import { TourCostCategoryService, TourCostCategory } from '../../core/services/tour-cost-category.service';
+import { TourRevenueCategoryService, TourRevenueCategory } from '../../core/services/tour-revenue-category.service';
+import { TourLeg, TourLegService } from '../../core/services/tour-leg.service';
 
 @Component({
   selector: 'app-tour-detail',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterLink],
   template: `
-    @if (tour(); as t) {
+    @if (loadError()) {
+      <div class="max-w-lg mx-auto space-y-4 p-6">
+        <div class="alert alert-error">{{ loadError() }}</div>
+        <a routerLink="/admin/logistics" class="btn btn-ghost">Wroc do listy tras</a>
+      </div>
+    } @else if (tour(); as t) {
       <div class="flex flex-col gap-6">
-        <div class="flex justify-between items-start gap-4">
+        <div class="flex flex-wrap justify-between items-start gap-4">
           <h2 class="text-3xl font-bold text-primary">Panel Trasy</h2>
-          <div class="flex gap-2">
+          <div class="flex flex-wrap gap-2">
             <a routerLink="/admin/logistics" class="btn btn-ghost">Powrot</a>
+            <a [routerLink]="['/admin/tour-legs/new']" [queryParams]="{ tourId: t.id }" class="btn btn-outline btn-sm">+ Odcinek trasy</a>
             <button class="btn btn-error btn-outline" (click)="deleteTour(t.id)">Usun trase</button>
           </div>
         </div>
@@ -69,6 +80,8 @@ import {
                     <tr>
                       <th>Data</th>
                       <th>Tytuł</th>
+                      <th>Kategoria</th>
+                      <th>Odcinek</th>
                       <th class="text-right">Kwota</th>
                       <th class="text-right">Akcje</th>
                     </tr>
@@ -78,21 +91,23 @@ import {
                       <tr>
                         <td>{{ cost.date | date:'shortDate' }}</td>
                         <td class="font-medium">{{ cost.title }}</td>
+                        <td class="text-sm">{{ cost.costCategoryName || '—' }}</td>
+                        <td class="text-xs font-mono">{{ cost.tourLegId ? (cost.tourLegId | slice:0:8) + '…' : '—' }}</td>
                         <td class="text-right font-mono text-error">
                           - {{ cost.amount | currency:cost.currency }}
                         </td>
                         <td class="text-right">
-                          <button class="btn btn-ghost btn-xs text-primary" (click)="editCost(cost.id)">Edytuj</button>
-                          <button class="btn btn-ghost btn-xs text-error" (click)="deleteCost(t.id, cost.id)">Usun</button>
+                          <button type="button" class="btn btn-ghost btn-xs text-primary" (click)="editCost(cost.id)">Edytuj</button>
+                          <button type="button" class="btn btn-ghost btn-xs text-error" (click)="deleteCost(t.id, cost.id)">Usun</button>
                         </td>
                       </tr>
                     } @empty {
-                      <tr><td colspan="4" class="text-center italic">Brak kosztow.</td></tr>
+                      <tr><td colspan="6" class="text-center italic">Brak kosztow.</td></tr>
                     }
                   </tbody>
                   <tfoot>
                     <tr class="bg-base-200 font-bold text-lg">
-                      <td colspan="2">SUMA WYDATKOW:</td>
+                      <td colspan="4">SUMA WYDATKOW:</td>
                       <td class="text-right text-error">{{ totalCost() | currency:'PLN' }}</td>
                       <td></td>
                     </tr>
@@ -110,6 +125,8 @@ import {
                     <tr>
                       <th>Data</th>
                       <th>Tytul</th>
+                      <th>Kategoria</th>
+                      <th>Odcinek</th>
                       <th class="text-right">Kwota</th>
                       <th class="text-right">Akcje</th>
                     </tr>
@@ -119,21 +136,23 @@ import {
                       <tr>
                         <td>{{ revenue.date | date:'shortDate' }}</td>
                         <td class="font-medium">{{ revenue.title }}</td>
+                        <td class="text-sm">{{ revenue.revenueCategoryName || '—' }}</td>
+                        <td class="text-xs font-mono">{{ revenue.tourLegId ? (revenue.tourLegId | slice:0:8) + '…' : '—' }}</td>
                         <td class="text-right font-mono text-success">
                           + {{ revenue.amount | currency:revenue.currency }}
                         </td>
                         <td class="text-right">
-                          <button class="btn btn-ghost btn-xs text-primary" (click)="editRevenue(revenue.id)">Edytuj</button>
-                          <button class="btn btn-ghost btn-xs text-error" (click)="deleteRevenue(t.id, revenue.id)">Usun</button>
+                          <button type="button" class="btn btn-ghost btn-xs text-primary" (click)="editRevenue(revenue.id)">Edytuj</button>
+                          <button type="button" class="btn btn-ghost btn-xs text-error" (click)="deleteRevenue(t.id, revenue.id)">Usun</button>
                         </td>
                       </tr>
                     } @empty {
-                      <tr><td colspan="4" class="text-center italic">Brak przychodow recznych.</td></tr>
+                      <tr><td colspan="6" class="text-center italic">Brak przychodow recznych.</td></tr>
                     }
                   </tbody>
                   <tfoot>
                     <tr class="bg-base-200 font-bold text-lg">
-                      <td colspan="2">SUMA PRZYCHODOW RECZNYCH:</td>
+                      <td colspan="4">SUMA PRZYCHODOW RECZNYCH:</td>
                       <td class="text-right text-success">{{ totalManualRevenue() | currency:'PLN' }}</td>
                       <td></td>
                     </tr>
@@ -154,6 +173,26 @@ import {
                   <div class="form-control">
                     <label class="label">Tytul</label>
                     <input formControlName="title" type="text" class="input input-sm input-bordered" placeholder="np. Hotel Berlin" />
+                  </div>
+
+                  <div class="form-control mt-2">
+                    <label class="label">Kategoria kosztu</label>
+                    <select formControlName="costCategoryId" class="select select-sm select-bordered">
+                      <option value="">— brak —</option>
+                      @for (c of costCategories(); track c.id) {
+                        <option [value]="c.id">{{ c.name }}</option>
+                      }
+                    </select>
+                  </div>
+
+                  <div class="form-control mt-2">
+                    <label class="label">Odcinek (opcjonalnie)</label>
+                    <select formControlName="tourLegId" class="select select-sm select-bordered">
+                      <option value="">— brak —</option>
+                      @for (leg of legsForTour(); track leg.id) {
+                        <option [value]="leg.id">{{ leg.legOrder }}. {{ leg.city }}</option>
+                      }
+                    </select>
                   </div>
 
                   <div class="grid grid-cols-2 gap-2 mt-2">
@@ -196,6 +235,26 @@ import {
                   <div class="form-control">
                     <label class="label">Tytul</label>
                     <input formControlName="title" type="text" class="input input-sm input-bordered" placeholder="np. Gaza od organizatora" />
+                  </div>
+
+                  <div class="form-control mt-2">
+                    <label class="label">Kategoria przychodu</label>
+                    <select formControlName="revenueCategoryId" class="select select-sm select-bordered">
+                      <option value="">— brak —</option>
+                      @for (c of revenueCategories(); track c.id) {
+                        <option [value]="c.id">{{ c.name }}</option>
+                      }
+                    </select>
+                  </div>
+
+                  <div class="form-control mt-2">
+                    <label class="label">Odcinek (opcjonalnie)</label>
+                    <select formControlName="tourLegId" class="select select-sm select-bordered">
+                      <option value="">— brak —</option>
+                      @for (leg of legsForTour(); track leg.id) {
+                        <option [value]="leg.id">{{ leg.legOrder }}. {{ leg.city }}</option>
+                      }
+                    </select>
                   </div>
 
                   <div class="grid grid-cols-2 gap-2 mt-2">
@@ -257,6 +316,31 @@ import {
                     </div>
                   </div>
                 }
+
+                <div class="divider my-4"></div>
+
+                <h4 class="font-semibold text-sm">Rozliczenie końcowe</h4>
+                @if (settlement(); as st) {
+                  <p class="text-xs mt-2">Ostatnie: {{ st.settledAt | date:'short' }} — saldo {{ st.balance | currency:(st.currency ?? 'PLN') }}</p>
+                  <a [routerLink]="['/admin/tour-settlements', st.id]" class="btn btn-ghost btn-xs mt-2">Szczegóły rozliczenia</a>
+                } @else {
+                  <p class="text-xs opacity-70 mt-2">Brak zapisanego rozliczenia.</p>
+                }
+                <textarea
+                  class="textarea textarea-bordered textarea-sm w-full mt-2"
+                  rows="2"
+                  placeholder="Notatka do rozliczenia (opcjonalnie)"
+                  [value]="settlementCloseNotes()"
+                  (input)="settlementCloseNotes.set($any($event.target).value)"
+                ></textarea>
+                <button
+                  type="button"
+                  class="btn btn-secondary btn-sm w-full mt-2"
+                  [disabled]="settlementClosing()"
+                  (click)="closeSettlement(t.id)"
+                >
+                  Przelicz i zamknij rozliczenie
+                </button>
               </div>
             </div>
           </div>
@@ -272,12 +356,22 @@ export class TourDetailComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private service = inject(LogisticsService);
+  private costCatService = inject(TourCostCategoryService);
+  private revCatService = inject(TourRevenueCategoryService);
+  private legService = inject(TourLegService);
   private fb = inject(FormBuilder);
 
   tour = signal<TourDetails | null>(null);
+  loadError = signal<string | null>(null);
   profitability = signal<TourProfitability | null>(null);
+  settlement = signal<TourSettlement | null>(null);
+  costCategories = signal<TourCostCategory[]>([]);
+  revenueCategories = signal<TourRevenueCategory[]>([]);
+  legsForTour = signal<TourLeg[]>([]);
   editingCostId = signal<string | null>(null);
   editingRevenueId = signal<string | null>(null);
+  settlementCloseNotes = signal('');
+  settlementClosing = signal(false);
 
   tourForm = this.fb.group({
     name: ['', Validators.required],
@@ -290,14 +384,18 @@ export class TourDetailComponent implements OnInit {
     title: ['', Validators.required],
     amount: [0, [Validators.required, Validators.min(0.01)]],
     currency: ['PLN', Validators.required],
-    date: ['', Validators.required]
+    date: ['', Validators.required],
+    costCategoryId: [''],
+    tourLegId: ['']
   });
 
   revenueForm = this.fb.group({
     title: ['', Validators.required],
     amount: [0, [Validators.required, Validators.min(0.01)]],
     currency: ['PLN', Validators.required],
-    date: ['', Validators.required]
+    date: ['', Validators.required],
+    revenueCategoryId: [''],
+    tourLegId: ['']
   });
 
   ngOnInit() {
@@ -306,18 +404,50 @@ export class TourDetailComponent implements OnInit {
 
   loadData() {
     const id = this.route.snapshot.paramMap.get('id');
-    if (id) {
-      this.service.getOneTour(id).subscribe(data => {
-        this.tour.set(data);
-        this.tourForm.patchValue({
-          name: data.name,
-          description: data.description,
-          startDate: this.toDateTimeLocal(data.startDate),
-          endDate: this.toDateTimeLocal(data.endDate)
-        });
-      });
-      this.service.getProfitability(id).subscribe(data => this.profitability.set(data));
+    if (!id) {
+      return;
     }
+    this.loadError.set(null);
+    forkJoin({
+      tour: this.service.getOneTour(id),
+      profit: this.service.getProfitability(id),
+      settlement: this.service.getSettlementForTour(id),
+      costCats: this.costCatService.getAll(),
+      revCats: this.revCatService.getAll(),
+      legs: this.legService.getAll()
+    }).subscribe({
+      next: ({ tour, profit, settlement, costCats, revCats, legs }) => {
+        this.tour.set(tour);
+        this.profitability.set(profit);
+        this.settlement.set(settlement);
+        this.costCategories.set(costCats.filter(c => c.active));
+        this.revenueCategories.set(revCats.filter(c => c.active));
+        this.legsForTour.set(legs.filter(l => l.tourId === id).sort((a, b) => a.legOrder - b.legOrder));
+        this.tourForm.patchValue({
+          name: tour.name,
+          description: tour.description,
+          startDate: this.toDateTimeLocal(tour.startDate),
+          endDate: this.toDateTimeLocal(tour.endDate)
+        });
+      },
+      error: () =>
+        this.loadError.set('Nie udalo sie wczytac panelu trasy (blad serwera, np. 500). Sprawdz logi backendu.')
+    });
+  }
+
+  closeSettlement(tourId: string) {
+    this.settlementClosing.set(true);
+    this.service
+      .closeSettlementForTour(tourId, { notes: this.settlementCloseNotes().trim() || null })
+      .subscribe({
+        next: s => {
+          this.settlement.set(s);
+          this.settlementClosing.set(false);
+          this.settlementCloseNotes.set('');
+          this.loadData();
+        },
+        error: () => this.settlementClosing.set(false)
+      });
   }
 
   updateTour(tourId: string) {
@@ -341,9 +471,34 @@ export class TourDetailComponent implements OnInit {
     });
   }
 
+  private buildCostRequest(): CreateCostRequest | UpdateCostRequest {
+    const v = this.costForm.getRawValue();
+    // getRawValue() typuje pola jako null | T; przy form.valid pola wymagane są ustawione
+    return {
+      title: v.title!,
+      amount: v.amount!,
+      currency: v.currency!,
+      date: v.date!,
+      costCategoryId: v.costCategoryId?.trim() ? v.costCategoryId : null,
+      tourLegId: v.tourLegId?.trim() ? v.tourLegId : null
+    };
+  }
+
+  private buildRevenueRequest(): CreateRevenueRequest | UpdateRevenueRequest {
+    const v = this.revenueForm.getRawValue();
+    return {
+      title: v.title!,
+      amount: v.amount!,
+      currency: v.currency!,
+      date: v.date!,
+      revenueCategoryId: v.revenueCategoryId?.trim() ? v.revenueCategoryId : null,
+      tourLegId: v.tourLegId?.trim() ? v.tourLegId : null
+    };
+  }
+
   addCost(tourId: string) {
     if (this.costForm.valid) {
-      const request = this.costForm.value as CreateCostRequest | UpdateCostRequest;
+      const request = this.buildCostRequest();
       const costId = this.editingCostId();
       const operation$ = costId
         ? this.service.updateCost(tourId, costId, request as UpdateCostRequest)
@@ -352,7 +507,7 @@ export class TourDetailComponent implements OnInit {
       operation$.subscribe({
         next: () => {
           this.editingCostId.set(null);
-          this.costForm.reset({ currency: 'PLN', amount: 0 });
+          this.resetCostForm();
           this.loadData();
         }
       });
@@ -370,7 +525,9 @@ export class TourDetailComponent implements OnInit {
       title: selectedCost.title,
       amount: selectedCost.amount,
       currency: selectedCost.currency,
-      date: this.toDateTimeLocal(selectedCost.date)
+      date: this.toDateTimeLocal(selectedCost.date),
+      costCategoryId: selectedCost.costCategoryId ?? '',
+      tourLegId: selectedCost.tourLegId ?? ''
     });
   }
 
@@ -382,7 +539,7 @@ export class TourDetailComponent implements OnInit {
     this.service.deleteCost(tourId, costId).subscribe(() => {
       if (this.editingCostId() === costId) {
         this.editingCostId.set(null);
-        this.costForm.reset({ currency: 'PLN', amount: 0 });
+        this.resetCostForm();
       }
       this.loadData();
     });
@@ -390,12 +547,12 @@ export class TourDetailComponent implements OnInit {
 
   cancelCostEdit() {
     this.editingCostId.set(null);
-    this.costForm.reset({ currency: 'PLN', amount: 0 });
+    this.resetCostForm();
   }
 
   addRevenue(tourId: string) {
     if (this.revenueForm.valid) {
-      const request = this.revenueForm.value as CreateRevenueRequest | UpdateRevenueRequest;
+      const request = this.buildRevenueRequest();
       const revenueId = this.editingRevenueId();
       const operation$ = revenueId
         ? this.service.updateRevenue(tourId, revenueId, request as UpdateRevenueRequest)
@@ -404,7 +561,7 @@ export class TourDetailComponent implements OnInit {
       operation$.subscribe({
         next: () => {
           this.editingRevenueId.set(null);
-          this.revenueForm.reset({ currency: 'PLN', amount: 0 });
+          this.resetRevenueForm();
           this.loadData();
         }
       });
@@ -422,7 +579,9 @@ export class TourDetailComponent implements OnInit {
       title: selectedRevenue.title,
       amount: selectedRevenue.amount,
       currency: selectedRevenue.currency,
-      date: this.toDateTimeLocal(selectedRevenue.date)
+      date: this.toDateTimeLocal(selectedRevenue.date),
+      revenueCategoryId: selectedRevenue.revenueCategoryId ?? '',
+      tourLegId: selectedRevenue.tourLegId ?? ''
     });
   }
 
@@ -434,7 +593,7 @@ export class TourDetailComponent implements OnInit {
     this.service.deleteRevenue(tourId, revenueId).subscribe(() => {
       if (this.editingRevenueId() === revenueId) {
         this.editingRevenueId.set(null);
-        this.revenueForm.reset({ currency: 'PLN', amount: 0 });
+        this.resetRevenueForm();
       }
       this.loadData();
     });
@@ -442,7 +601,7 @@ export class TourDetailComponent implements OnInit {
 
   cancelRevenueEdit() {
     this.editingRevenueId.set(null);
-    this.revenueForm.reset({ currency: 'PLN', amount: 0 });
+    this.resetRevenueForm();
   }
 
   totalCost() {
@@ -451,6 +610,28 @@ export class TourDetailComponent implements OnInit {
 
   totalManualRevenue() {
     return this.tour()?.revenues.reduce((sum, r) => sum + r.amount, 0) || 0;
+  }
+
+  private resetCostForm() {
+    this.costForm.reset({
+      title: '',
+      currency: 'PLN',
+      amount: 0,
+      date: '',
+      costCategoryId: '',
+      tourLegId: ''
+    });
+  }
+
+  private resetRevenueForm() {
+    this.revenueForm.reset({
+      title: '',
+      currency: 'PLN',
+      amount: 0,
+      date: '',
+      revenueCategoryId: '',
+      tourLegId: ''
+    });
   }
 
   private toDateTimeLocal(dateValue: string | Date) {

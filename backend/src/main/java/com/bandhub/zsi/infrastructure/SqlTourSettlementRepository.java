@@ -23,6 +23,7 @@ class SqlTourSettlementRepository implements TourSettlementRepository {
     SqlTourSettlementRepository(JpaTourSettlementRepository jpaRepository) { this.jpaRepository = jpaRepository; }
     @Override public TourSettlement save(TourSettlement settlement) { return jpaRepository.save(settlement); }
     @Override public Optional<TourSettlement> findById(UUID id) { return jpaRepository.findById(id); }
+    @Override public Optional<TourSettlement> findByTour_Id(UUID tourId) { return jpaRepository.findByTour_Id(tourId); }
     @Override public List<TourSettlement> findAll() { return jpaRepository.findAll(); }
     @Override
     public PagedResult<TourSettlement> findPage(int page, int size, String sortBy, String sortDir, String q) {
@@ -40,6 +41,8 @@ class SqlTourSettlementRepository implements TourSettlementRepository {
 }
 
 interface JpaTourSettlementRepository extends JpaRepository<TourSettlement, UUID> {
+
+    Optional<TourSettlement> findByTour_Id(UUID tourId);
 
     @Query("SELECT t FROM TourSettlement t WHERE LOWER(COALESCE(t.settledBy, '')) LIKE LOWER(:pattern)")
     org.springframework.data.domain.Page<TourSettlement> findAllFiltered(@Param("pattern") String pattern, Pageable pageable);

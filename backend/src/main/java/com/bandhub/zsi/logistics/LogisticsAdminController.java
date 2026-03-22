@@ -2,9 +2,11 @@ package com.bandhub.zsi.logistics;
 
 import com.bandhub.zsi.logistics.dto.*; // Import DTO
 import com.bandhub.zsi.shared.api.PageResponse;
+import com.bandhub.zsi.shared.security.AuthenticationDisplayName;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
@@ -17,9 +19,11 @@ import java.util.UUID;
 class LogisticsAdminController {
 
     private final LogisticsAdminService service;
+    private final TourSettlementAdminService settlementAdminService;
 
-    LogisticsAdminController(LogisticsAdminService service) {
+    LogisticsAdminController(LogisticsAdminService service, TourSettlementAdminService settlementAdminService) {
         this.service = service;
+        this.settlementAdminService = settlementAdminService;
     }
 
     @PostMapping("/tours")
@@ -101,5 +105,23 @@ class LogisticsAdminController {
     @GetMapping("/tours/{id}/profitability")
     ResponseEntity<TourProfitabilityResponse> getProfitability(@PathVariable UUID id) {
         return ResponseEntity.ok(service.getProfitability(id));
+    }
+
+    @GetMapping("/tours/{tourId}/settlement")
+    ResponseEntity<TourSettlementResponse> getSettlement(@PathVariable UUID tourId) {
+        return settlementAdminService.findByTourId(tourId)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/tours/{tourId}/settlement/close")
+    ResponseEntity<TourSettlementResponse> closeSettlement(
+            @PathVariable UUID tourId,
+            @RequestBody(required = false) CloseTourSettlementRequest body,
+            Authentication authentication
+    ) {
+        String actor = AuthenticationDisplayName.resolve(authentication);
+        String notes = body != null ? body.notes() : null;
+        return ResponseEntity.ok(settlementAdminService.closeFromComputedData(tourId, actor, notes));
     }
 }

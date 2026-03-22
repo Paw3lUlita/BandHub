@@ -10,6 +10,8 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -68,5 +70,22 @@ public class TourLegAdminService {
 
     private TourLegResponse toResponse(TourLeg leg) {
         return new TourLegResponse(leg.getId(), leg.getTour().getId(), leg.getConcertId(), leg.getLegOrder(), leg.getCity(), leg.getVenueName(), leg.getLegDate(), leg.getPlannedBudget(), leg.getCurrency());
+    }
+
+    private static void validateLegAgainstTour(Tour tour, LocalDateTime legDate, BigDecimal plannedBudget) {
+        if (plannedBudget != null && plannedBudget.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("Planned budget cannot be negative");
+        }
+        if (legDate == null) {
+            return;
+        }
+        LocalDateTime start = tour.getStartDate();
+        LocalDateTime end = tour.getEndDate();
+        if (start != null && legDate.isBefore(start)) {
+            throw new IllegalArgumentException("Leg date is before tour start");
+        }
+        if (end != null && legDate.isAfter(end)) {
+            throw new IllegalArgumentException("Leg date is after tour end");
+        }
     }
 }

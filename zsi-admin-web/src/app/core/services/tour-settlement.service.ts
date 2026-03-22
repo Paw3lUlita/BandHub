@@ -5,6 +5,7 @@ import { Observable } from 'rxjs';
 export interface TourSettlement {
   id: string;
   tourId: string;
+  tourName: string | null;
   settledBy: string | null;
   settledAt: string | null;
   totalCosts: number | null;

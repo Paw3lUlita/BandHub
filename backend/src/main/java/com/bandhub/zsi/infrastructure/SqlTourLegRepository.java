@@ -23,6 +23,7 @@ class SqlTourLegRepository implements TourLegRepository {
     SqlTourLegRepository(JpaTourLegRepository jpaRepository) { this.jpaRepository = jpaRepository; }
     @Override public TourLeg save(TourLeg tourLeg) { return jpaRepository.save(tourLeg); }
     @Override public Optional<TourLeg> findById(UUID id) { return jpaRepository.findById(id); }
+    @Override public Optional<TourLeg> findByIdAndTour_Id(UUID legId, UUID tourId) { return jpaRepository.findByIdAndTour_Id(legId, tourId); }
     @Override public List<TourLeg> findAll() { return jpaRepository.findAll(); }
     @Override
     public PagedResult<TourLeg> findPage(int page, int size, String sortBy, String sortDir, String q) {
@@ -41,6 +42,8 @@ class SqlTourLegRepository implements TourLegRepository {
 }
 
 interface JpaTourLegRepository extends JpaRepository<TourLeg, UUID> {
+
+    Optional<TourLeg> findByIdAndTour_Id(UUID id, UUID tourId);
 
     @Query("SELECT t FROM TourLeg t WHERE LOWER(COALESCE(t.city, '')) LIKE LOWER(:pattern) OR LOWER(COALESCE(t.venueName, '')) LIKE LOWER(:pattern)")
     org.springframework.data.domain.Page<TourLeg> findAllFiltered(@Param("pattern") String pattern, Pageable pageable);

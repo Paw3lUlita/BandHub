@@ -64,4 +64,11 @@ public class TourSettlement {
         this.currency = currency;
         this.notes = notes;
     }
+
+    /** Optional narrative after automated totals from {@code fn_close_tour_settlement}. */
+    public void mergeNotes(String notes) {
+        if (notes != null && !notes.isBlank()) {
+            this.notes = notes;
+        }
+    }
 }

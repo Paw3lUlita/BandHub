@@ -1,8 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, catchError, of, throwError } from 'rxjs';
 
-// Modele wewnątrz serwisu - zgodnie z Twoim wzorcem
 export interface Tour {
   id: string;
   name: string;
@@ -30,6 +29,9 @@ export interface TourCost {
   amount: number;
   currency: string;
   date: string;
+  costCategoryId: string | null;
+  costCategoryName: string | null;
+  tourLegId: string | null;
 }
 
 export interface TourRevenue {
@@ -38,6 +40,9 @@ export interface TourRevenue {
   amount: number;
   currency: string;
   date: string;
+  revenueCategoryId: string | null;
+  revenueCategoryName: string | null;
+  tourLegId: string | null;
 }
 
 export interface CreateCostRequest {
@@ -45,6 +50,8 @@ export interface CreateCostRequest {
   amount: number;
   currency: string;
   date: string;
+  costCategoryId: string | null;
+  tourLegId: string | null;
 }
 
 export interface UpdateCostRequest {
@@ -52,6 +59,8 @@ export interface UpdateCostRequest {
   amount: number;
   currency: string;
   date: string;
+  costCategoryId: string | null;
+  tourLegId: string | null;
 }
 
 export interface CreateRevenueRequest {
@@ -59,6 +68,8 @@ export interface CreateRevenueRequest {
   amount: number;
   currency: string;
   date: string;
+  revenueCategoryId: string | null;
+  tourLegId: string | null;
 }
 
 export interface UpdateRevenueRequest {
@@ -66,6 +77,8 @@ export interface UpdateRevenueRequest {
   amount: number;
   currency: string;
   date: string;
+  revenueCategoryId: string | null;
+  tourLegId: string | null;
 }
 
 export interface TourDetails extends Tour {
@@ -81,6 +94,23 @@ export interface TourProfitability {
   totalRevenue: number;
   balance: number;
   currency: string;
+}
+
+export interface TourSettlement {
+  id: string;
+  tourId: string;
+  tourName: string | null;
+  settledBy: string | null;
+  settledAt: string | null;
+  totalCosts: number | null;
+  totalRevenue: number | null;
+  balance: number | null;
+  currency: string | null;
+  notes: string | null;
+}
+
+export interface CloseTourSettlementRequest {
+  notes: string | null;
 }
 
 export interface PageResponse<T> {
@@ -163,5 +193,15 @@ export class LogisticsService {
 
   getProfitability(id: string): Observable<TourProfitability> {
     return this.http.get<TourProfitability>(`${this.apiUrl}/tours/${id}/profitability`);
+  }
+
+  getSettlementForTour(tourId: string): Observable<TourSettlement | null> {
+    return this.http.get<TourSettlement>(`${this.apiUrl}/tours/${tourId}/settlement`).pipe(
+      catchError(err => (err.status === 404 ? of(null) : throwError(() => err)))
+    );
+  }
+
+  closeSettlementForTour(tourId: string, body: CloseTourSettlementRequest): Observable<TourSettlement> {
+    return this.http.post<TourSettlement>(`${this.apiUrl}/tours/${tourId}/settlement/close`, body);
   }
 }

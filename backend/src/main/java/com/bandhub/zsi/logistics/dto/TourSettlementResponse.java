@@ -7,6 +7,7 @@ import java.util.UUID;
 public record TourSettlementResponse(
         UUID id,
         UUID tourId,
+        String tourName,
         String settledBy,
         LocalDateTime settledAt,
         BigDecimal totalCosts,

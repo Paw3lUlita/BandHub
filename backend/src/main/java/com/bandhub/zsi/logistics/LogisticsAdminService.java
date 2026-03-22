@@ -2,7 +2,10 @@ package com.bandhub.zsi.logistics;
 
 import com.bandhub.zsi.logistics.domain.Tour;
 import com.bandhub.zsi.logistics.domain.TourCost;
+import com.bandhub.zsi.logistics.domain.TourCostCategory;
+import com.bandhub.zsi.logistics.domain.TourLeg;
 import com.bandhub.zsi.logistics.domain.TourRevenue;
+import com.bandhub.zsi.logistics.domain.TourRevenueCategory;
 import com.bandhub.zsi.logistics.dto.*;
 import com.bandhub.zsi.shared.api.PageResponse;
 import com.bandhub.zsi.shared.Money;
@@ -11,8 +14,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -20,12 +25,24 @@ import java.util.UUID;
 public class LogisticsAdminService {
 
     private final TourRepository tourRepository;
+    private final TourCostCategoryRepository costCategoryRepository;
+    private final TourRevenueCategoryRepository revenueCategoryRepository;
+    private final TourLegRepository tourLegRepository;
 
-    public LogisticsAdminService(TourRepository tourRepository) {
+    public LogisticsAdminService(
+            TourRepository tourRepository,
+            TourCostCategoryRepository costCategoryRepository,
+            TourRevenueCategoryRepository revenueCategoryRepository,
+            TourLegRepository tourLegRepository
+    ) {
         this.tourRepository = tourRepository;
+        this.costCategoryRepository = costCategoryRepository;
+        this.revenueCategoryRepository = revenueCategoryRepository;
+        this.tourLegRepository = tourLegRepository;
     }
 
     public UUID createTour(CreateTourRequest request) {
+        validateTourDateRange(request.startDate(), request.endDate());
         Tour tour = Tour.plan(
                 request.name(),
                 request.startDate(),
@@ -43,6 +60,7 @@ public class LogisticsAdminService {
         Tour tour = tourRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Tour not found: " + id));
 
+        validateTourDateRange(request.startDate(), request.endDate());
         tour.updateDetails(
                 request.name(),
                 request.description(),
@@ -59,21 +77,28 @@ public class LogisticsAdminService {
     }
 
     public void addCost(UUID tourId, CreateCostRequest request) {
-
         Tour tour = tourRepository.findById(tourId)
                 .orElseThrow(() -> new EntityNotFoundException("Tour not found: " + tourId));
 
+        validateMovementDateWithinTour(tour, request.date());
+        TourCostCategory category = resolveCostCategory(request.costCategoryId());
+        TourLeg leg = resolveTourLeg(tourId, request.tourLegId());
+        if (leg != null) {
+            validateLegDateWithinTour(tour, leg.getLegDate());
+        }
 
         Money money = new Money(request.amount(), request.currency());
+        assertLegBudget(tour, leg, money, null);
 
         TourCost cost = new TourCost(
                 request.title(),
                 money,
-                request.date()
+                request.date(),
+                category,
+                leg
         );
 
         tour.logCost(cost);
-
         tourRepository.save(tour);
     }
 
@@ -81,9 +106,18 @@ public class LogisticsAdminService {
         Tour tour = tourRepository.findById(tourId)
                 .orElseThrow(() -> new EntityNotFoundException("Tour not found: " + tourId));
 
+        validateMovementDateWithinTour(tour, request.date());
+        TourCostCategory category = resolveCostCategory(request.costCategoryId());
+        TourLeg leg = resolveTourLeg(tourId, request.tourLegId());
+        if (leg != null) {
+            validateLegDateWithinTour(tour, leg.getLegDate());
+        }
+
         TourCost existingCost = tour.getCost(costId);
         Money updatedMoney = new Money(request.amount(), request.currency());
-        existingCost.update(request.title(), updatedMoney, request.date());
+        assertLegBudget(tour, leg, updatedMoney, costId);
+
+        existingCost.update(request.title(), updatedMoney, request.date(), category, leg);
     }
 
     public void deleteCost(UUID tourId, UUID costId) {
@@ -96,8 +130,15 @@ public class LogisticsAdminService {
         Tour tour = tourRepository.findById(tourId)
                 .orElseThrow(() -> new EntityNotFoundException("Tour not found: " + tourId));
 
+        validateMovementDateWithinTour(tour, request.date());
+        TourRevenueCategory category = resolveRevenueCategory(request.revenueCategoryId());
+        TourLeg leg = resolveTourLeg(tourId, request.tourLegId());
+        if (leg != null) {
+            validateLegDateWithinTour(tour, leg.getLegDate());
+        }
+
         Money money = new Money(request.amount(), request.currency());
-        TourRevenue revenue = new TourRevenue(request.title(), money, request.date());
+        TourRevenue revenue = new TourRevenue(request.title(), money, request.date(), category, leg);
         tour.logRevenue(revenue);
         tourRepository.save(tour);
     }
@@ -106,9 +147,16 @@ public class LogisticsAdminService {
         Tour tour = tourRepository.findById(tourId)
                 .orElseThrow(() -> new EntityNotFoundException("Tour not found: " + tourId));
 
+        validateMovementDateWithinTour(tour, request.date());
+        TourRevenueCategory category = resolveRevenueCategory(request.revenueCategoryId());
+        TourLeg leg = resolveTourLeg(tourId, request.tourLegId());
+        if (leg != null) {
+            validateLegDateWithinTour(tour, leg.getLegDate());
+        }
+
         TourRevenue existingRevenue = tour.getRevenue(revenueId);
         Money updatedMoney = new Money(request.amount(), request.currency());
-        existingRevenue.update(request.title(), updatedMoney, request.date());
+        existingRevenue.update(request.title(), updatedMoney, request.date(), category, leg);
     }
 
     public void deleteRevenue(UUID tourId, UUID revenueId) {
@@ -117,7 +165,7 @@ public class LogisticsAdminService {
         tour.removeRevenue(revenueId);
     }
 
-    @Transactional(readOnly = true) // Optymalizacja dla odczytu
+    @Transactional(readOnly = true)
     public List<TourResponse> getAllTours() {
         return tourRepository.findAll().stream()
                 .map(t -> new TourResponse(t.getId(), t.getName(), t.getStartDate(), t.getEndDate()))
@@ -151,9 +199,8 @@ public class LogisticsAdminService {
 
     @Transactional(readOnly = true)
     public TourDetailResponse getTourDetails(UUID id) {
-        Tour tour = tourRepository.findById(id)
+        Tour tour = tourRepository.findWithDetailsById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Tour not found: " + id));
-
 
         var costResponses = tour.getCosts().stream()
                 .map(c -> new TourCostResponse(
@@ -161,7 +208,10 @@ public class LogisticsAdminService {
                         c.getTitle(),
                         c.getCost().amount(),
                         c.getCost().currency(),
-                        c.getCostDate()
+                        c.getCostDate(),
+                        c.getCostCategory() != null ? c.getCostCategory().getId() : null,
+                        c.getCostCategory() != null ? c.getCostCategory().getName() : null,
+                        c.getTourLeg() != null ? c.getTourLeg().getId() : null
                 ))
                 .toList();
 
@@ -171,7 +221,10 @@ public class LogisticsAdminService {
                         r.getTitle(),
                         r.getRevenue().amount(),
                         r.getRevenue().currency(),
-                        r.getRevenueDate()
+                        r.getRevenueDate(),
+                        r.getRevenueCategory() != null ? r.getRevenueCategory().getId() : null,
+                        r.getRevenueCategory() != null ? r.getRevenueCategory().getName() : null,
+                        r.getTourLeg() != null ? r.getTourLeg().getId() : null
                 ))
                 .toList();
 
@@ -205,12 +258,98 @@ public class LogisticsAdminService {
         return new TourProfitabilityResponse(totalCosts, ticketRevenue, manualRevenue, totalRevenue, balance, "PLN");
     }
 
+    private static void validateTourDateRange(LocalDateTime start, LocalDateTime end) {
+        if (start != null && end != null && end.isBefore(start)) {
+            throw new IllegalArgumentException("Tour end date must not be before start date");
+        }
+    }
+
+    private static void validateMovementDateWithinTour(Tour tour, LocalDateTime at) {
+        if (at == null) {
+            return;
+        }
+        LocalDateTime start = tour.getStartDate();
+        LocalDateTime end = tour.getEndDate();
+        if (start != null && at.isBefore(start)) {
+            throw new IllegalArgumentException("Entry date is before tour start");
+        }
+        if (end != null && at.isAfter(end)) {
+            throw new IllegalArgumentException("Entry date is after tour end");
+        }
+    }
+
+    private static void validateLegDateWithinTour(Tour tour, LocalDateTime legDate) {
+        if (legDate == null) {
+            return;
+        }
+        LocalDateTime start = tour.getStartDate();
+        LocalDateTime end = tour.getEndDate();
+        if (start != null && legDate.isBefore(start)) {
+            throw new IllegalArgumentException("Leg date is before tour start");
+        }
+        if (end != null && legDate.isAfter(end)) {
+            throw new IllegalArgumentException("Leg date is after tour end");
+        }
+    }
+
+    private TourCostCategory resolveCostCategory(UUID id) {
+        if (id == null) {
+            return null;
+        }
+        TourCostCategory c = costCategoryRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Cost category not found: " + id));
+        if (!c.isActive()) {
+            throw new IllegalArgumentException("Cost category is inactive: " + id);
+        }
+        return c;
+    }
+
+    private TourRevenueCategory resolveRevenueCategory(UUID id) {
+        if (id == null) {
+            return null;
+        }
+        TourRevenueCategory c = revenueCategoryRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Revenue category not found: " + id));
+        if (!c.isActive()) {
+            throw new IllegalArgumentException("Revenue category is inactive: " + id);
+        }
+        return c;
+    }
+
+    private TourLeg resolveTourLeg(UUID tourId, UUID legId) {
+        if (legId == null) {
+            return null;
+        }
+        return tourLegRepository.findByIdAndTour_Id(legId, tourId)
+                .orElseThrow(() -> new IllegalArgumentException("Tour leg does not belong to this tour: " + legId));
+    }
+
+    private static void assertLegBudget(Tour tour, TourLeg leg, Money newMoney, UUID excludeCostId) {
+        if (leg == null || leg.getPlannedBudget() == null) {
+            return;
+        }
+        String legCur = leg.getCurrency() != null && !leg.getCurrency().isBlank() ? leg.getCurrency() : "PLN";
+        if (!legCur.equals(newMoney.currency())) {
+            return;
+        }
+        BigDecimal sum = tour.getCosts().stream()
+                .filter(c -> c.getTourLeg() != null && leg.getId().equals(c.getTourLeg().getId()))
+                .filter(c -> excludeCostId == null || !excludeCostId.equals(c.getId()))
+                .filter(c -> legCur.equals(c.getCost().currency()))
+                .map(c -> c.getCost().amount())
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        sum = sum.add(newMoney.amount());
+        if (sum.compareTo(leg.getPlannedBudget()) > 0) {
+            throw new IllegalStateException("Total costs on this leg exceed planned budget for the leg");
+        }
+    }
+
     private Comparator<TourResponse> resolveTourComparator(String sortBy, boolean descending) {
-        Comparator<TourResponse> comparator = switch (sortBy) {
-            case "endDate" -> Comparator.comparing(TourResponse::endDate);
+        Comparator<TourResponse> comparator = switch (Objects.requireNonNullElse(sortBy, "startDate")) {
+            case "endDate" -> Comparator.comparing(TourResponse::endDate, Comparator.nullsLast(Comparator.naturalOrder()));
             case "name" -> Comparator.comparing(TourResponse::name, String.CASE_INSENSITIVE_ORDER);
-            case "startDate" -> Comparator.comparing(TourResponse::startDate);
-            default -> Comparator.comparing(TourResponse::startDate);
+            case "startDate" -> Comparator.comparing(TourResponse::startDate, Comparator.nullsLast(Comparator.naturalOrder()));
+            default -> Comparator.comparing(TourResponse::startDate, Comparator.nullsLast(Comparator.naturalOrder()));
         };
 
         return descending ? comparator.reversed() : comparator;

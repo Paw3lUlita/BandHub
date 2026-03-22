@@ -7,6 +7,7 @@ import jakarta.validation.constraints.Positive;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 public record UpdateRevenueRequest(
         @NotBlank(message = "Revenue title is required")
@@ -21,5 +22,9 @@ public record UpdateRevenueRequest(
         String currency,
 
         @NotNull(message = "Revenue date is required")
-        LocalDateTime date
+        LocalDateTime date,
+
+        UUID revenueCategoryId,
+
+        UUID tourLegId
 ) {}

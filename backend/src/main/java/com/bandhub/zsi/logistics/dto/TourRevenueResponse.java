@@ -9,5 +9,8 @@ public record TourRevenueResponse(
         String title,
         BigDecimal amount,
         String currency,
-        LocalDateTime date
+        LocalDateTime date,
+        UUID revenueCategoryId,
+        String revenueCategoryName,
+        UUID tourLegId
 ) {}

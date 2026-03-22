@@ -32,15 +32,27 @@ public class TourRevenue {
     @Column(name = "revenue_date")
     private LocalDateTime revenueDate;
 
-    public TourRevenue(String title, Money revenue, LocalDateTime revenueDate) {
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "revenue_category_id")
+    private TourRevenueCategory revenueCategory;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tour_leg_id")
+    private TourLeg tourLeg;
+
+    public TourRevenue(String title, Money revenue, LocalDateTime revenueDate, TourRevenueCategory revenueCategory, TourLeg tourLeg) {
         this.title = title;
         this.revenue = revenue;
         this.revenueDate = revenueDate;
+        this.revenueCategory = revenueCategory;
+        this.tourLeg = tourLeg;
     }
 
-    public void update(String title, Money revenue, LocalDateTime revenueDate) {
+    public void update(String title, Money revenue, LocalDateTime revenueDate, TourRevenueCategory revenueCategory, TourLeg tourLeg) {
         this.title = title;
         this.revenue = revenue;
         this.revenueDate = revenueDate;
+        this.revenueCategory = revenueCategory;
+        this.tourLeg = tourLeg;
     }
 }

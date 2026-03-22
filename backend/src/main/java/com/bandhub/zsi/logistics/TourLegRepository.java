@@ -10,6 +10,7 @@ import java.util.UUID;
 public interface TourLegRepository {
     TourLeg save(TourLeg tourLeg);
     Optional<TourLeg> findById(UUID id);
+    Optional<TourLeg> findByIdAndTour_Id(UUID legId, UUID tourId);
     List<TourLeg> findAll();
     PagedResult<TourLeg> findPage(int page, int size, String sortBy, String sortDir, String q);
     void deleteById(UUID id);

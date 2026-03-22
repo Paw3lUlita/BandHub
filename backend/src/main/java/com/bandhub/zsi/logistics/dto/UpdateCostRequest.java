@@ -7,6 +7,7 @@ import jakarta.validation.constraints.Positive;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 public record UpdateCostRequest(
         @NotBlank(message = "Cost title is required")
@@ -21,5 +22,9 @@ public record UpdateCostRequest(
         String currency,
 
         @NotNull(message = "Cost date is required")
-        LocalDateTime date
+        LocalDateTime date,
+
+        UUID costCategoryId,
+
+        UUID tourLegId
 ) {}

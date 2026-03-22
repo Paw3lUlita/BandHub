@@ -44,7 +44,7 @@ const SORT_OPTIONS: SortOption[] = [
         <tbody>
           @for (item of (pageData$ | async)?.content ?? []; track item.id) {
             <tr class="hover">
-              <td class="text-xs font-mono">{{ item.tourId }}</td>
+              <td class="font-medium">{{ item.tourName || item.tourId }}</td>
               <td>{{ item.settledBy || '-' }}</td>
               <td class="text-sm">{{ item.settledAt | date:'short' }}</td>
               <td class="font-mono">{{ item.totalCosts != null ? (item.totalCosts | currency:(item.currency ?? 'PLN'):'symbol':'1.2-2') : '-' }}</td>

@@ -32,15 +32,27 @@ public class TourCost {
     @Column(name = "cost_date")
     private LocalDateTime costDate;
 
-    public TourCost(String title, Money cost, LocalDateTime costDate) {
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cost_category_id")
+    private TourCostCategory costCategory;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tour_leg_id")
+    private TourLeg tourLeg;
+
+    public TourCost(String title, Money cost, LocalDateTime costDate, TourCostCategory costCategory, TourLeg tourLeg) {
         this.title = title;
         this.cost = cost;
         this.costDate = costDate;
+        this.costCategory = costCategory;
+        this.tourLeg = tourLeg;
     }
 
-    public void update(String title, Money cost, LocalDateTime costDate) {
+    public void update(String title, Money cost, LocalDateTime costDate, TourCostCategory costCategory, TourLeg tourLeg) {
         this.title = title;
         this.cost = cost;
         this.costDate = costDate;
+        this.costCategory = costCategory;
+        this.tourLeg = tourLeg;
     }
 }
