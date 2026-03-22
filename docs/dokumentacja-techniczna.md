@@ -1314,7 +1314,73 @@ Cel: domknięcie sprintu 14 przy minimalnym rozroście domeny: koszty i przychod
 
 ---
 
-## 18. Miejsce na kolejne podsumowania
+## 18. Sprint 15 - Raporty biznesowe (PDF / Excel)
+
+Status: `Done`  
+Cel: spełnienie wymagania **raportów biznesowych z eksportem do PDF i Excel** (bare minimum): trzy raporty (merch, ticketing, rentowność trasy), jeden generator w panelu admina, spójność z istniejącą logiką domenową i audyt w tabelach `report_runs` / `export_jobs`.
+
+### Zrealizowane
+
+- **Zależności Maven** – [backend/pom.xml](backend/pom.xml): `com.github.librepdf:openpdf` (generacja PDF), `org.apache.poi:poi-ooxml` (arkusz `.xlsx`).
+- **DTO API raportów** – [BusinessReportType.java](backend/src/main/java/com/bandhub/zsi/reporting/dto/BusinessReportType.java) (enum: `MERCH`, `TICKETING_EVENT`, `TOUR_PROFITABILITY`); [BusinessReportPreviewResponse.java](backend/src/main/java/com/bandhub/zsi/reporting/dto/BusinessReportPreviewResponse.java) (`reportType` + `payload` jako istniejące rekordy odpowiedzi modułów).
+- **Renderer binarny (adapter infrastruktury)** – [ReportBinaryRenderer.java](backend/src/main/java/com/bandhub/zsi/reporting/infrastructure/ReportBinaryRenderer.java): klasa pakietowa `infrastructure`; dla każdego typu raportu metody `*Pdf` i `*Xlsx` budują dokument z tymi samymi metrykami co podgląd JSON (tabele PDF, arkusz z kolumnami „Metryka / Wartość”). Teksty w PDF bez polskich znaków diakrytycznych (Helvetica) – świadomy kompromis pod stabilność kodowania.
+- **Orkiestracja** – [BusinessReportService.java](backend/src/main/java/com/bandhub/zsi/reporting/BusinessReportService.java):
+  - `preview` / `previewWithAudit`: delegacja do `MerchReportService`, `TicketingReportingService.eventSnapshot`, `LogisticsAdminService.getProfitability` (brak duplikacji SQL/agregacji).
+  - `exportWithAudit`: generacja `byte[]` + `ReportExportResult` (typ MIME, nazwa pliku).
+  - **Audyt:** przy podglądzie zapis `ReportRun` ze statusem `COMPLETED` i `file_format = PREVIEW`; przy eksporcie najpierw `RUNNING`, po sukcesie `COMPLETED` + `ExportJob` (`module = reporting`, `file_path = inline://{filename}`), przy błędzie `FAILED` na `ReportRun`.
+  - Parametry zapisu jako JSON (`ObjectMapper`) w `parameters_json`.
+- **REST** – [BusinessReportsController.java](backend/src/main/java/com/bandhub/zsi/reporting/BusinessReportsController.java):
+  - `GET /api/admin/reports/business/preview?type=...` (+ `from`/`to` lub `concertId` lub `tourId`) → JSON + rekord w `report_runs`.
+  - `GET /api/admin/reports/business/export?type=...&format=pdf|xlsx` → `Content-Disposition: attachment`, `application/pdf` lub `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`.
+  - Ochrona: `@PreAuthorize("hasRole('ADMIN')")` jak pozostałe raporty admina.
+- **Frontend** – [business-report.service.ts](zsi-admin-web/src/app/core/services/business-report.service.ts); [report-generator.component.ts](zsi-admin-web/src/app/features/reporting/report-generator.component.ts); trasa `admin/reports/generator` w [app.routes.ts](zsi-admin-web/src/app/app.routes.ts); pozycja menu w [admin-layout.component.ts](zsi-admin-web/src/app/layout/admin-layout.component.ts). Podgląd przez `computed()` mapujące `payload` na karty (spójnie z `merch-report` / `ticketing-event-report`). Pobieranie plików: `HttpClient` + `responseType: 'blob'` + tymczasowy link `<a download>` (jak eksport CSV uczestników).
+
+### Przykładowe przepływy E2E (obrona)
+
+#### Flow 1: Merch – podgląd i Excel
+
+| Krok | Aktor | Akcja | Endpoint / UI | Oczekiwany efekt |
+|------|--------|--------|---------------|------------------|
+| 1 | Admin | Loguje się do Keycloak | Panel Angular | JWT z rolą `ADMIN` |
+| 2 | Admin | Otwiera generator | `/admin/reports/generator` | Widok wyboru typu raportu |
+| 3 | Admin | Wybiera „Merch”, opcjonalnie zakres dat, **Podgląd** | `GET .../business/preview?type=MERCH&from=&to=` | JSON z `orderCount`, `totalRevenue`, … + wiersz w `report_runs` (`file_format=PREVIEW`) |
+| 4 | Admin | **Pobierz Excel** | `GET .../business/export?type=MERCH&format=xlsx&...` | Plik `.xlsx` + `report_runs` (COMPLETED) + `export_jobs` (`inline://merch-sales.xlsx`) |
+
+#### Flow 2: Ticketing – koncert i PDF
+
+| Krok | Aktor | Akcja | Endpoint / UI | Oczekiwany efekt |
+|------|--------|--------|---------------|------------------|
+| 1 | Admin | Wybiera typ „Ticketing”, koncert z listy | `concertId` z `GET /api/admin/concerts` | Walidacja: bez `concertId` → **400** |
+| 2 | Admin | Podgląd | `GET .../preview?type=TICKETING_EVENT&concertId=` | Ten sam model co `TicketingEventReportController` (sprzedaż, obłożenie) |
+| 3 | Admin | Pobierz PDF | `GET .../export?format=pdf` | PDF z tabelą metryk; audyt jak wyżej |
+
+#### Flow 3: Logistyka – rentowność trasy
+
+| Krok | Aktor | Akcja | Endpoint / UI | Oczekiwany efekt |
+|------|--------|--------|---------------|------------------|
+| 1 | Admin | Wybiera „Rentowność trasy”, trasę z listy | `tourId` z `GET /api/admin/logistics/tours` | Spójność z `GET .../logistics/tours/{id}/profitability` |
+| 2 | Admin | Eksport XLSX | `type=TOUR_PROFITABILITY&format=xlsx` | Arkusz: koszty, przychody z biletów, ręczne, bilans |
+
+### Decyzje techniczne (klasy – dlaczego tak)
+
+- **Osobny kontroler pod `/reports/business` zamiast rozszerzania `MerchReportController` eksportem plików:** cienkie kontrolery domenowe zostają przy JSON; generator i audyt w jednym miejscu modułu `reporting` – na obronie: *„Jedna ścieżka do wymogu PDF/Excel bez mieszania zapisu binarnego z prostymi GET-ami raportowymi.”*
+- **Delegacja do istniejących serwisów:** liczby w pliku muszą być zgodne z JSON – jedno źródło prawdy (`MerchReportService`, `TicketingReportingService`, `LogisticsAdminService`).
+- **`ReportBinaryRenderer` w `infrastructure`:** zgodnie z Ports & Adapters – generacja pliku to szczegół techniczny, nie reguła domenowa.
+- **`inline://` w `export_jobs.file_path`:** brak magazynu plików na dysku w MVP; ścieżka opisuje nazwę pliku wysłanego do klienta (świadome uproszczenie pod obronę modelu audytu).
+
+### Ryzyka / otwarte tematy
+
+- PDF bez pełnej obsługi polskich znaków (etykiety uproszczone).
+- Duże eksporty w pamięci (`byte[]`) – akceptowalne dla małych zbiorów w projekcie inżynierskim.
+
+### Wplyw na wymagania projektu
+
+- Realizacja punktu o **raportach biznesowych i eksporcie do PDF/Excel** z poziomu panelu administracyjnego.
+- Wykorzystanie istniejących tabel audytu raportów (`report_runs`, `export_jobs`) z wcześniejszych migracji.
+
+---
+
+## 19. Miejsce na kolejne podsumowania
 
 Kolejne wpisy dodajemy sekcyjnie:
 

@@ -205,6 +205,10 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/reporting/ticketing-event-report.component').then(m => m.TicketingEventReportComponent)
       },
+      {
+        path: 'reports/generator',
+        loadComponent: () => import('./features/reporting/report-generator.component').then(m => m.ReportGeneratorComponent)
+      },
       { path: 'report-runs', loadComponent: () => import('./features/reporting/report-runs/report-run-list.component').then(m => m.ReportRunListComponent) },
       { path: 'report-runs/new', loadComponent: () => import('./features/shared/form-placeholder.component').then(m => m.FormPlaceholderComponent) },
       { path: 'report-runs/:id', loadComponent: () => import('./features/shared/form-placeholder.component').then(m => m.FormPlaceholderComponent) },
