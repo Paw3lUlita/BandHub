@@ -2,13 +2,13 @@ import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { CmsService, GalleryImage } from '../../../core/services/cms.service';
-import { Observable } from 'rxjs';
+import { CmsService } from '../../../core/services/cms.service';
+import { ApiUrlPipe } from '../../shared/api-url.pipe';
 
 @Component({
   selector: 'app-news-add',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, ApiUrlPipe],
   template: `
     <div class="max-w-3xl mx-auto">
       <h2 class="text-2xl font-bold mb-6">
@@ -36,7 +36,7 @@ import { Observable } from 'rxjs';
 
           @if (form.get('imageUrl')?.value) {
             <div class="mt-2">
-              <img [src]="form.get('imageUrl')?.value" class="h-32 rounded-lg shadow-sm" alt="Podgląd">
+              <img [src]="form.get('imageUrl')?.value | apiUrl" class="h-32 rounded-lg shadow-sm" alt="Podgląd">
             </div>
           }
         </div>

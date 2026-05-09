@@ -80,6 +80,14 @@ export const routes: Routes = [
         loadComponent: () => import('./features/cms/gallery/gallery-list.component').then(m => m.GalleryListComponent)
       },
       {
+        path: 'site-settings',
+        loadComponent: () => import('./features/cms/site-settings/site-settings.component').then(m => m.SiteSettingsComponent)
+      },
+      {
+        path: 'ui-dictionary',
+        loadComponent: () => import('./features/cms/ui-dictionary/ui-dictionary-list.component').then(m => m.UiDictionaryListComponent)
+      },
+      {
         path: 'news',
         loadComponent: () => import('./features/cms/news/news-list.component').then(m => m.NewsListComponent)
       },
@@ -208,6 +216,11 @@ export const routes: Routes = [
       {
         path: 'reports/generator',
         loadComponent: () => import('./features/reporting/report-generator.component').then(m => m.ReportGeneratorComponent)
+      },
+      {
+        path: 'reports/docx-templates',
+        loadComponent: () =>
+          import('./features/reporting/docx-templates/docx-template-list.component').then(m => m.DocxTemplateListComponent)
       },
       { path: 'report-runs', loadComponent: () => import('./features/reporting/report-runs/report-run-list.component').then(m => m.ReportRunListComponent) },
       { path: 'report-runs/new', loadComponent: () => import('./features/shared/form-placeholder.component').then(m => m.FormPlaceholderComponent) },

@@ -59,6 +59,14 @@ public class SetlistItemAdminService {
     }
 
     @Transactional(readOnly = true)
+    public List<SetlistItemResponse> getBySetlistId(UUID setlistId) {
+        return setlistItemRepository.findAll().stream()
+                .filter(item -> item.getSetlist().getId().equals(setlistId))
+                .map(this::toResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
     public PageResponse<SetlistItemResponse> getPage(int page, int size, String sortBy, String sortDir, String query) {
         var result = setlistItemRepository.findPage(page, size, sortBy, sortDir, query);
         List<SetlistItemResponse> content = result.content().stream().map(this::toResponse).toList();

@@ -1380,7 +1380,402 @@ Cel: spełnienie wymagania **raportów biznesowych z eksportem do PDF i Excel** 
 
 ---
 
-## 19. Miejsce na kolejne podsumowania
+## 19. Sprint 16 - Wydruki parametryzowane DOCX (rozliczenie trasy)
+
+Status: `Done`  
+Cel: spełnienie wymagania **parametryzowanych wydruków na bazie szablonów Word (.docx)** z możliwością **zmiany szablonu przez użytkownika** (upload + aktywacja), w wariancie lean: jeden moduł szablonów (`TOUR_SETTLEMENT`), jeden typ raportu w generatorze (`TOUR_SETTLEMENT_DOCX`), dane z istniejącej logistyki (`TourSettlementAdminService`, `LogisticsAdminService`).
+
+### Zrealizowane
+
+- **Migracja Flyway** — [V14__Docx_Templates.sql](backend/src/main/resources/db/migration/V14__Docx_Templates.sql): tabela `docx_templates` (`name`, `module_code`, `template_version`, `active`, `file_path`, `created_at`), indeks unikalny częściowy: co najwyżej jeden aktywny szablon na `module_code`.
+- **Encja domenowa** — [DocxTemplate.java](backend/src/main/java/com/bandhub/zsi/reporting/domain/DocxTemplate.java): metadane szablonu; fabryka `create`, metody `rename`, `setActive` (bez publicznych setterów Lombok poza kontrolowanym API).
+- **Port repozytorium** — [DocxTemplateRepository.java](backend/src/main/java/com/bandhub/zsi/reporting/DocxTemplateRepository.java); **adapter JPA** — [SqlDocxTemplateRepository.java](backend/src/main/java/com/bandhub/zsi/infrastructure/SqlDocxTemplateRepository.java) (pakiet `infrastructure`, klasa niepubliczna).
+- **Stałe modułu** — [DocxTemplateModuleCodes.java](backend/src/main/java/com/bandhub/zsi/reporting/dto/DocxTemplateModuleCodes.java): `TOUR_SETTLEMENT`.
+- **DTO API** — [DocxTemplateResponse.java](backend/src/main/java/com/bandhub/zsi/reporting/dto/DocxTemplateResponse.java); [TourSettlementDocxPreviewPayload.java](backend/src/main/java/com/bandhub/zsi/reporting/dto/TourSettlementDocxPreviewPayload.java) (podgląd JSON dla generatora).
+- **Typ raportu** — [BusinessReportType.java](backend/src/main/java/com/bandhub/zsi/reporting/dto/BusinessReportType.java): wartość `TOUR_SETTLEMENT_DOCX`.
+- **Silnik placeholderów** — [TourSettlementDocxPlaceholderBuilder.java](backend/src/main/java/com/bandhub/zsi/reporting/infrastructure/TourSettlementDocxPlaceholderBuilder.java): mapa `${tourName}`, `${settlementTotalCosts}`, `${profitBalance}`, itd. (puste stringi, gdy brak rozliczenia w bazie).
+- **Renderer DOCX** — [TourSettlementDocxRenderer.java](backend/src/main/java/com/bandhub/zsi/reporting/infrastructure/TourSettlementDocxRenderer.java): Apache POI `XWPF` — paragrafy, tabele, nagłówki; MVP: po zamianie jeden run na paragraf (uproszczenie formatowania Word).
+- **Orkiestracja** — rozszerzenie [BusinessReportService.java](backend/src/main/java/com/bandhub/zsi/reporting/BusinessReportService.java): `preview` / `exportWithAudit` dla `TOUR_SETTLEMENT_DOCX`, format `docx`, odczyt pliku z `{app.upload.dir}/docx-templates/`, audyt jak PDF/XLSX (`report_runs`, `export_jobs`, `inline://`).
+- **REST szablonów** — [DocxTemplateAdminService.java](backend/src/main/java/com/bandhub/zsi/reporting/DocxTemplateAdminService.java), [DocxTemplateAdminController.java](backend/src/main/java/com/bandhub/zsi/reporting/DocxTemplateAdminController.java): `GET/POST /api/admin/reports/docx-templates`, `PATCH .../{id}/activate`, `DELETE .../{id}` (upload `multipart`, walidacja `.docx`).
+- **REST generatora** — [BusinessReportsController.java](backend/src/main/java/com/bandhub/zsi/reporting/BusinessReportsController.java): istniejące `/preview` i `/export` z `format=docx` dla typu `TOUR_SETTLEMENT_DOCX`.
+- **Test jednostkowy** — [TourSettlementDocxRendererTest.java](backend/src/test/java/com/bandhub/zsi/reporting/infrastructure/TourSettlementDocxRendererTest.java): podstawianie w wygenerowanym programowo `.docx` bez zmiany kodu produkcyjnego przy zmianie treści szablonu.
+- **Frontend** — [docx-template.service.ts](zsi-admin-web/src/app/core/services/docx-template.service.ts), [docx-template-list.component.ts](zsi-admin-web/src/app/features/reporting/docx-templates/docx-template-list.component.ts), trasa `admin/reports/docx-templates`, pozycja menu; rozszerzenie [business-report.service.ts](zsi-admin-web/src/app/core/services/business-report.service.ts) i [report-generator.component.ts](zsi-admin-web/src/app/features/reporting/report-generator.component.ts); przycisk **Pobierz DOCX** na [tour-settlement-detail.component.ts](zsi-admin-web/src/app/features/logistics/tour-settlements/tour-settlement-detail.component.ts).
+
+### Przykładowe przepływy E2E (obrona)
+
+#### Flow 1: Wgranie szablonu i zmiana bez deployu
+
+| Krok | Aktor | Akcja | Endpoint / UI | Oczekiwany efekt |
+|------|--------|--------|---------------|------------------|
+| 1 | Admin | Loguje się (rola `ADMIN`) | Keycloak + panel | JWT |
+| 2 | Admin | **Szablony DOCX** | `/admin/reports/docx-templates` | Formularz + lista |
+| 3 | Admin | Wgrywa plik `.docx` z tekstem `${tourName}` | `POST .../docx-templates` (`multipart`) | Wiersz w `docx_templates`, plik w `uploads/.../docx-templates/*.docx`; pierwszy szablon modułu = **aktywny** |
+| 4 | Admin | Edytuje ten sam plik lokalnie w Word (inna treść / nowe placeholdery), ponownie wgrywa | kolejny `POST` | Nowa wersja (`template_version`), domyślnie nieaktywna do czasu aktywacji |
+| 5 | Admin | **Aktywuj** na liście | `PATCH .../{id}/activate` | Poprzedni aktywny w module wyłączony, wybrany włączony (unikalny indeks) |
+
+#### Flow 2: Generacja wydruku z audytem
+
+| Krok | Aktor | Akcja | Endpoint / UI | Oczekiwany efekt |
+|------|--------|--------|---------------|------------------|
+| 1 | Admin | Generator raportów, typ **Logistyka — rozliczenie trasy (DOCX)**, wybór trasy, **Podgląd** | `GET .../business/preview?type=TOUR_SETTLEMENT_DOCX&tourId=` | JSON z `TourSettlementDocxPreviewPayload` + `report_runs` (`PREVIEW`) |
+| 2 | Admin | **Pobierz DOCX** | `GET .../business/export?type=TOUR_SETTLEMENT_DOCX&format=docx&tourId=` | Plik `.docx` z podstawionymi wartościami; `report_runs` (`COMPLETED`, `DOCX`) + `export_jobs` |
+| 3 | Admin | Alternatywnie z ekranu rozliczenia | **Pobierz DOCX** na szczególe rozliczenia | Ten sam endpoint z `tourId` rozliczenia |
+
+### Decyzje techniczne (klasy — dlaczego tak)
+
+- **Szablony w module `reporting` obok audytu raportów:** jedna ścieżka do wymogu „wydruk + ślad w systemie”; szablon to artefakt raportowania, nie encja logistyczna.
+- **`TOUR_SETTLEMENT_DOCX` zamiast rozszerzenia `TOUR_PROFITABILITY` o DOCX:** rozdzielenie formatów wyjściowych (PDF/XLSX vs szablon użytkownika) i czytelniejszy opis w `report_runs.report_name`.
+- **Pliki w podkatalogu `docx-templates`:** separacja od zdjęć galerii; ta sama właściwość `app.upload.dir` co CMS.
+- **„Bare minimum” renderer:** prosta zamiana `${...}` w tekście paragrafu; złożone szablony Word (podział placeholdera na wiele runów) mogą wymagać ręcznego zapisania frazy w jednym runie w edytorze.
+
+### Ryzyka / otwarte tematy
+
+- Placeholdery rozcięte przez Word na wiele runów — w MVP zalecenie: wpisywać placeholder jako ciągły tekst w jednym miejscu.
+- Generacja w pamięci (`byte[]`) — jak w Sprint 15.
+
+### Wplyw na wymagania projektu
+
+- Realizacja punktu o **parametryzowanych wydrukach** i **zmianie szablonu przez użytkownika** (upload z panelu admina).
+
+---
+
+## 20. Sprint 17-18 - Aplikacja mobilna fana (Expo + React Native Web)
+
+Status: `Done`  
+Cel: dostarczenie minimalnej aplikacji fana (web-preview + mobile runtime) z logowaniem OIDC, konsumpcją istniejących publicznych endpointów (`products`, `orders`, `concerts`, `ticket-orders`) oraz funkcją setlist i CMS feed pod obronę projektu inżynierskiego.
+
+### Zrealizowane
+
+- **Nowa aplikacja w repo**: [bandhub-mobile](bandhub-mobile) (osobny projekt obok `backend` i `zsi-admin-web`), wygenerowany na Expo Router.
+- **Publiczne endpointy read-only pod mobile** (bez rozbudowy domeny):
+  - [NewsPublicController.java](backend/src/main/java/com/bandhub/zsi/cms/NewsPublicController.java): `GET /api/public/news`, `/page`, `/{id}` (delegacja do istniejącego `CmsAdminService`).
+  - [GalleryFeedPublicController.java](backend/src/main/java/com/bandhub/zsi/cms/GalleryFeedPublicController.java): `GET /api/public/gallery` (delegacja do istniejącego `GalleryAdminService`).
+  - [SetlistPublicController.java](backend/src/main/java/com/bandhub/zsi/fan/SetlistPublicController.java): `GET /api/public/setlists`, `/page`, `/{id}`, `/{id}/items`.
+- **Setlisty fan-facing**:
+  - [SetlistItemAdminService.java](backend/src/main/java/com/bandhub/zsi/fan/SetlistItemAdminService.java): dodana metoda `getBySetlistId(UUID)`, użyta przez publiczny endpoint.
+- **CORS pod web-preview Expo (dynamiczne porty)**:
+  - [SecurityConfig.java](backend/src/main/java/com/bandhub/zsi/config/SecurityConfig.java): zamiast sztywnej listy originów użyto `setAllowedOriginPatterns(http://localhost:*, http://127.0.0.1:*)` — Expo Web na dev podpisuje się dowolnym wolnym portem (8081 zajęty przez Keycloaka, więc Expo wybiera np. 8082/19000), a `setAllowCredentials(true)` wymaga properly skonfigurowanego patternu.
+- **Rejestracja i logowanie fana (in-app, bez popupów)**:
+  - [FanRegistrationPublicController.java](backend/src/main/java/com/bandhub/zsi/fan/FanRegistrationPublicController.java): `POST /api/public/register` (permitAll), tworzy konto fana w Keycloaku.
+  - [FanRegistrationService.java](backend/src/main/java/com/bandhub/zsi/fan/FanRegistrationService.java): re-use istniejącego `UserAdminService` (Keycloak Admin Client) — tworzy usera, ustawia hasło `temporary=false`, przypisuje rolę `FAN`.
+  - [FanRegistrationRequest.java](backend/src/main/java/com/bandhub/zsi/fan/dto/FanRegistrationRequest.java) / [FanRegistrationResponse.java](backend/src/main/java/com/bandhub/zsi/fan/dto/FanRegistrationResponse.java): walidacja Bean Validation (`@NotBlank`, `@Email`, `@Size`).
+- **Warstwa mobilna - konfiguracja i API**:
+  - [config.ts](bandhub-mobile/lib/config.ts): `EXPO_PUBLIC_*` + helper budowania URL API.
+  - [http.ts](bandhub-mobile/lib/http.ts): ujednolicone requesty (`apiRequest`, `apiRequestRaw`) z obsługą JWT.
+  - [api.ts](bandhub-mobile/lib/api.ts): kontrakty do `news`, `gallery`, `setlists`, `concerts`, `ticket-orders`, `products`, `orders`.
+  - [api.ts](bandhub-mobile/types/api.ts): typy DTO odpowiadające backendowym rekordom + lokalne modele historii.
+  - [storage.ts](bandhub-mobile/lib/storage.ts): persystencja tokenu oraz lokalnej historii zakupów (`AsyncStorage`).
+- **Warstwa mobilna - state management**:
+  - [AuthProvider.tsx](bandhub-mobile/providers/AuthProvider.tsx): in-app **Direct Access Grant** do Keycloaka (`POST .../protocol/openid-connect/token` z `grant_type=password`), bez zewnętrznego okna; `register()` woła `POST /api/public/register` i automatycznie loguje. Decoduje `preferred_username` z JWT do nagłówka konta.
+  - [CartProvider.tsx](bandhub-mobile/providers/CartProvider.tsx): lokalny koszyk (add/remove/clear/total).
+  - [AuthForm.tsx](bandhub-mobile/components/ui/AuthForm.tsx): wspólny formularz login/rejestracja (segmented tabs, walidacja, błędy z Keycloaka).
+- **Warstwa mobilna - UI i routing**:
+  - [app/_layout.tsx](bandhub-mobile/app/_layout.tsx): root stack + providers.
+  - [app/(tabs)/_layout.tsx](bandhub-mobile/app/(tabs)/_layout.tsx): taby `Home`, `Koncerty`, `Merch`, `Bilety`, `Konto`.
+  - [index.tsx](bandhub-mobile/app/(tabs)/index.tsx): feed CMS (news + galeria) + setlisty.
+  - [concerts.tsx](bandhub-mobile/app/(tabs)/concerts.tsx), [concert-detail.tsx](bandhub-mobile/app/concerts/[id].tsx): listowanie koncertów + zakup biletu (`POST /api/public/ticket-orders`).
+  - [merch.tsx](bandhub-mobile/app/(tabs)/merch.tsx), [product-detail.tsx](bandhub-mobile/app/products/[id].tsx), [cart.tsx](bandhub-mobile/app/cart.tsx), [checkout.tsx](bandhub-mobile/app/checkout.tsx): katalog produktów + koszyk + checkout (`POST /api/public/orders`).
+  - [tickets.tsx](bandhub-mobile/app/(tabs)/tickets.tsx), [ticket-detail.tsx](bandhub-mobile/app/tickets/[id].tsx): „Moje bilety” oparte o lokalną historię z odpowiedzi API.
+  - [account.tsx](bandhub-mobile/app/(tabs)/account.tsx): logowanie/wylogowanie + lokalna historia zamówień merch.
+  - [Screen.tsx](bandhub-mobile/components/ui/Screen.tsx): wspólny kontener ekranu.
+
+### Kontrakty API użyte przez mobilkę
+
+- **CMS**: `GET /api/public/news/page`, `GET /api/public/news/{id}`, `GET /api/public/gallery`.
+- **Setlisty**: `GET /api/public/setlists/page`, `GET /api/public/setlists/{id}/items`.
+- **Ticketing**: `GET /api/public/concerts/page`, `GET /api/public/concerts/{id}`, `POST /api/public/ticket-orders`.
+- **E-commerce**: `GET /api/public/products/page`, `GET /api/public/products/{id}`, `POST /api/public/orders`.
+- **Auth fana**:
+  - `POST {keycloakIssuer}/protocol/openid-connect/token` (Direct Grant `password`, klient `bandhub-public-client`).
+  - `POST /api/public/register` — body `{username, password, email?, firstName?, lastName?}`, odpowiedź `{userId, username}`.
+
+### Szczegółowe flow E2E (obrona)
+
+#### Flow 1: Rejestracja, logowanie i checkout merchu
+
+| Krok | Aktor | Akcja | Endpoint / UI | Oczekiwany efekt |
+|------|--------|--------|---------------|------------------|
+| 1 | Nowy fan | W zakładce **Konto** wybiera „Rejestracja”, podaje `username`, `password`, opcjonalnie email/imię | `POST /api/public/register` | `201 Created` + nowy user w Keycloaku z rolą `FAN` |
+| 2 | App | Po rejestracji automatyczne logowanie | `POST {issuer}/protocol/openid-connect/token` (Direct Grant) | `access_token` zapisany w `AsyncStorage` |
+| 3 | Istniejący fan | W zakładce **Konto** wybiera „Logowanie”, podaje login + hasło | `POST .../token` | Token zapisany |
+| 4 | Fan | Przegląda produkty, dodaje do koszyka | `GET /api/public/products/page`, UI `CartProvider` | Lokalny koszyk |
+| 5 | Fan | Checkout (adres, provider płatności) | `POST /api/public/orders` z `Authorization: Bearer <token>` | `201 Created`, nagłówek `Location` |
+| 6 | App | Zapis historii zamówienia | `saveMerchOrder(...)` | Widoczne w zakładce **Konto** |
+
+#### Flow 2: Fan kupuje bilet i widzi kod
+
+| Krok | Aktor | Akcja | Endpoint / UI | Oczekiwany efekt |
+|------|--------|--------|---------------|------------------|
+| 1 | Fan | Otwiera listę koncertów | `GET /api/public/concerts/page` | Lista koncertów |
+| 2 | Fan | Otwiera szczegóły koncertu | `GET /api/public/concerts/{id}` | Pula biletów i dostępność |
+| 3 | Fan | Wybiera pulę + ilość i kupuje | `POST /api/public/ticket-orders` | `TicketPurchaseResponse(orderId, ticketCodes)` |
+| 4 | Aplikacja | Zapisuje zakup lokalnie | `saveTicketPurchase(...)` | Zakładka **Bilety** pokazuje wpis |
+| 5 | Fan | Otwiera szczegóły biletu | `tickets/[id]` | Lista kodów biletowych do okazania |
+
+#### Flow 3: Fan przegląda setlisty koncertów
+
+| Krok | Aktor | Akcja | Endpoint / UI | Oczekiwany efekt |
+|------|--------|--------|---------------|------------------|
+| 1 | Fan | Otwiera Home | `GET /api/public/setlists/page` | Lista opublikowanych setlist |
+| 2 | Fan | Otwiera szczegóły setlisty | `GET /api/public/setlists/{id}/items` | Lista utworów (`songOrder`, `songTitle`, `durationSeconds`) |
+| 3 | Fan | Korzysta z feedu CMS | `GET /api/public/news/page`, `GET /api/public/gallery` | Treści aktualizowane z panelu admina |
+
+### Decyzje techniczne (klasy - dlaczego tak)
+
+- **Maksymalny reuse backendu**: publiczne kontrolery delegują do istniejących serwisów (`CmsAdminService`, `GalleryAdminService`, `SetlistAdminService`, `UserAdminService`) zamiast mnożenia nowych warstw.
+- **Setlisty jako osobny endpoint publiczny**: fan może korzystać z funkcji setlist bez roli `ADMIN`, zgodnie z celem aplikacji mobilnej.
+- **Direct Grant zamiast Authorization Code w mobilce**: świadoma decyzja na MVP inżynierki — formularz logowania jest **w aplikacji** (lepszy UX, brak okienek przeglądarki). Klient `bandhub-public-client` w Keycloaku ma `Direct Access Grants Enabled = ON`. W produkcji wybralibyśmy Authorization Code + PKCE; tu liczy się prostota demo.
+- **Rejestracja po stronie backendu, nie wprost na Keycloaku**: aplikacja nie ma uprawnień admina realmu, dlatego endpoint `/api/public/register` używa wewnętrznego `Keycloak` admin clienta i ustawia rolę `FAN` w jednym miejscu (spójność z istniejącym `UserAdminService`).
+- **Lokalna historia „moje bilety / moje zamówienia”**: w MVP użyto `AsyncStorage`, bo istniejące kontrakty publiczne zwracają `orderId`/kody przy zakupie i to wystarcza do demonstracji procesu end-to-end.
+- **Expo Router + tabs**: szybkie osiągnięcie czytelnego przepływu UI przy minimalnej liczbie zależności i prostym debugowaniu na webie.
+
+### Ryzyka / otwarte tematy
+
+- Historia zamówień/biletów po reinstalacji aplikacji jest tracona (lokalna persystencja MVP).
+- W środowiskach innych niż localhost należy zaktualizować `EXPO_PUBLIC_API_BASE_URL` oraz CORS.
+- **Direct Grant** wymaga włączonej opcji `Direct Access Grants Enabled` na kliencie `bandhub-public-client` w Keycloaku (publiczny client, bez secret). W produkcji: migracja do Authorization Code + PKCE.
+- **Rejestracja zwraca błędy Keycloaka** (`409` przy zajętym username) jako `IllegalArgumentException` — globalny `RestExceptionHandler` mapuje to na `400 Bad Request` z polem `message`.
+
+### Wplyw na wymagania projektu
+
+- Spełnienie wymogu drugiej aplikacji klienckiej (mobile fan app) działającej na tym samym backendzie i logice danych.
+- Domknięcie fan-facing procesów: CMS (odczyt), ticketing (zakup + kod), e-commerce (checkout).
+- Włączenie funkcji setlist do aplikacji mobilnej zgodnie z rozbudową modułu fan/mobile.
+- Self-service rejestracji fana zamyka pełny scenariusz „nowy użytkownik → konto → zakup”.
+
+---
+
+## 21. Sprint 17-18 hot-fix - Site Settings (CMS-only branding) + auth gate w mobilce
+
+Status: `Done`  
+Cel: domknięcie wymagania projektowego o pełnym sterowaniu treściami (aktualności, opisy, zdjęcia) z poziomu administracji + UX poprawki w aplikacji mobilnej (gate logowania na płatne moduły, czytelny błąd rejestracji).
+
+### Zrealizowane
+
+- **Backend - moduł SiteSettings (singleton CMS)**:
+  - [SiteSettings.java](backend/src/main/java/com/bandhub/zsi/cms/domain/SiteSettings.java): encja z `id=1` (singleton), pola: `bandName`, `tagline`, `heroImageUrl`, `aboutText`, audyt `updatedAt`/`updatedBy`. Metoda `update(...)` używa `Assert.hasText` na `bandName` jako invariant domeny.
+  - [SiteSettingsRepository.java](backend/src/main/java/com/bandhub/zsi/cms/SiteSettingsRepository.java): `JpaRepository<SiteSettings, Short>`.
+  - [SiteSettingsAdminService.java](backend/src/main/java/com/bandhub/zsi/cms/SiteSettingsAdminService.java): `getSettings()`, `updateSettings(req, updatedBy)` - zapisuje znacznik czasu i autora, rzuca `EntityNotFoundException` jeśli ktoś usunąłby singleton.
+  - [SiteSettingsAdminController.java](backend/src/main/java/com/bandhub/zsi/cms/SiteSettingsAdminController.java): `GET/PUT /api/admin/site-settings` (`@PreAuthorize("hasRole('ADMIN')")`).
+  - [SiteSettingsPublicController.java](backend/src/main/java/com/bandhub/zsi/cms/SiteSettingsPublicController.java): `GET /api/public/site-settings` (permitAll) - feed brandingu konsumowany przez mobilkę.
+  - [SiteSettingsResponse.java](backend/src/main/java/com/bandhub/zsi/cms/dto/SiteSettingsResponse.java) / [UpdateSiteSettingsRequest.java](backend/src/main/java/com/bandhub/zsi/cms/dto/UpdateSiteSettingsRequest.java): DTO + walidacja Bean Validation (`@NotBlank bandName`, `@Size`).
+  - [V15__Site_Settings.sql](backend/src/main/resources/db/migration/V15__Site_Settings.sql): tabela + seed singletona (id=1) z neutralnymi defaultami.
+- **Admin web - edytor**:
+  - [site-settings.component.ts](zsi-admin-web/src/app/features/cms/site-settings/site-settings.component.ts): formularz Reactive Forms (`bandName`, `tagline`, `heroImageUrl` jako select z `GET /api/admin/gallery`, `aboutText`), podgląd hero, alerty success/error, znacznik aktualizacji.
+  - [cms.service.ts](zsi-admin-web/src/app/core/services/cms.service.ts): rozszerzenie o `getSiteSettings()` / `updateSiteSettings(req)`.
+  - Routing: `/admin/site-settings` w [app.routes.ts](zsi-admin-web/src/app/app.routes.ts), pozycja w sidebarze ([admin-layout.component.ts](zsi-admin-web/src/app/layout/admin-layout.component.ts), sekcja "CMS / Treści" → "Ustawienia strony").
+- **Mobile - branding pochodzi z CMS, nie z kodu**:
+  - [BrandingProvider.tsx](bandhub-mobile/providers/BrandingProvider.tsx): kontekst React, zaciąga `/api/public/site-settings` przy starcie aplikacji (`reload()`), udostępnia `settings` całemu drzewku.
+  - [_layout.tsx (root)](bandhub-mobile/app/_layout.tsx): owinięcie `AuthProvider → BrandingProvider → CartProvider`.
+  - [(tabs)/_layout.tsx](bandhub-mobile/app/(tabs)/_layout.tsx): nagłówek zakładki Home używa `settings.bandName` (gdy załadowane), `tabBarLabel` zostaje stałe ("Home") jako etykieta nawigacji.
+  - [(tabs)/index.tsx](bandhub-mobile/app/(tabs)/index.tsx): hero image (`settings.heroImageUrl`), tytuł (`bandName`), tagline, About - wszystko z CMS-a; usunięto twardo zakodowane teksty marketingowe ("BandHub Fan App", "Aktualnosci, setlisty i media z CMS").
+  - [api.ts](bandhub-mobile/lib/api.ts) + [types/api.ts](bandhub-mobile/types/api.ts): nowy typ `SiteSettings` i klient `fetchSiteSettings()`.
+- **Auth gate dla Bilety i Merch**:
+  - [RequireAuth.tsx](bandhub-mobile/components/ui/RequireAuth.tsx): kontener pokazuje `children` tylko zalogowanym; w innym wypadku wyświetla kartę "Wymagane logowanie" + CTA do zakładki Konto.
+  - [(tabs)/merch.tsx](bandhub-mobile/app/(tabs)/merch.tsx) i [(tabs)/tickets.tsx](bandhub-mobile/app/(tabs)/tickets.tsx): zawijają zawartość w `RequireAuth`, fetch katalogu/historii uzależniony od `isAuthenticated`.
+- **Diagnostyka rejestracji**:
+  - [UserAdminService.java](backend/src/main/java/com/bandhub/zsi/user/UserAdminService.java) - `createUser`: gdy Keycloak zwróci status inny niż 201/409, czytamy body (`response.readEntity(String.class)`) i przekazujemy w komunikacie wyjątku (`Keycloak <status>: <body>`). Dodatkowo `setEmailVerified(true)`, żeby brak weryfikacji maila nie blokował logowania.
+  - [FanRegistrationService.java](backend/src/main/java/com/bandhub/zsi/fan/FanRegistrationService.java): tworzy usera bez hasła w fazie 1, w fazie 2 ustawia hasło `temporary=false` (brak required action `UPDATE_PASSWORD` przy logowaniu).
+
+### Kontrakty API
+
+- `GET /api/public/site-settings` → `SiteSettingsResponse`. Permit-all, czytane przez mobilkę przy starcie.
+- `GET /api/admin/site-settings` / `PUT /api/admin/site-settings` (rola `ADMIN`).
+
+### Flow E2E (obrona): edycja brandingu i propagacja do mobilki
+
+| Krok | Aktor | Akcja | Endpoint / UI | Oczekiwany efekt |
+|------|--------|--------|---------------|------------------|
+| 1 | Manager | Otwiera "CMS / Treści → Ustawienia strony" | Angular `/admin/site-settings` | Załadowane aktualne wartości (`GET /api/admin/site-settings`) |
+| 2 | Manager | Wybiera hero z galerii i edytuje `aboutText` | Reactive Form | Walidacja `bandName` jako `@NotBlank` |
+| 3 | Manager | Klik "Zapisz" | `PUT /api/admin/site-settings` | `200 OK` + `updatedAt`/`updatedBy` w odpowiedzi |
+| 4 | Fan (mobile) | Restart appki / odświeżenie Home | `GET /api/public/site-settings` przez `BrandingProvider` | Nowy hero + nazwa zespołu + about widoczne na Home, brak twardo wpisanych tekstów w kliencie |
+
+### Decyzje techniczne (klasy - dlaczego tak)
+
+- **Singleton z fixed id**: brak złożonego CRUD-u dla strony ustawień - wystarczy edycja jednego rekordu. `SMALLINT` jako klucz, seed w migracji V15 zapewnia stałą obecność.
+- **Reuse `GalleryAdminService`**: hero image to URL do uploadowanego pliku - nie duplikujemy uploadu, tylko reużywamy już istniejący strumień `/api/admin/gallery`.
+- **Public read-only**: dane brandingu nie są tajne - mobilka pobiera je bez tokenu (jak news/gallery).
+- **Brak hardcodu w mobilce**: tekst hero, tytuł, about i nawet etykieta header zakładki Home pochodzą ze stanu `BrandingProvider` zasilanego z backendu - spełnia wymóg projektu o sterowaniu wszystkimi widocznymi treściami z administracji.
+- **Auth gate w UI a nie w API**: katalog produktów / historia biletów to publiczne endpointy w MVP, ale UX projektu wymaga, by fan najpierw się zalogował - dlatego gate jest klientowy (`RequireAuth`), bez zmiany kontraktu backendu.
+- **Diagnostyczne błędy rejestracji**: zamiast generycznego "Nie udało się utworzyć użytkownika" zwracamy `Keycloak 400: <body>` - manager / programista widzi konkretną przyczynę (np. `User exists with same email`, `password policy violation`).
+
+### Ryzyka / otwarte tematy
+
+- Brak inwalidacji cache w mobilce po edycji w adminie - fan musi zrestartować appkę albo `pull-to-refresh` (do dorzucenia w razie potrzeby).
+- `aboutText` to plain text (`TEXT`) - jeśli powstanie potrzeba bogatej formatki (markdown / HTML) trzeba dorobić sanitizację.
+- Auth gate jest UI-only; backend dalej dopuszcza anonimowe `GET /api/public/products`. To OK na MVP, w produkcji można dodać rate-limit lub przenieść za `JwtAuth`.
+
+### Wplyw na wymagania projektu
+
+- **Realizuje wymóg**: „Sterowanie wszystkimi widocznymi aktualnościami, opisami, zdjęciami itd. powinno odbywać się z poziomu administracyjnej części systemu (żadnych tekstów lub zmiennych grafik nie można umieszczać na sztywno w kodzie)" - branding (nazwa, tagline, hero, about) jest teraz w bazie i edytowalny z panelu admina; mobilka ma jedynie ramę UI.
+- Domyka UX rejestracji fana po stronie mobilki (czytelny komunikat błędu Keycloaka + reset hasła non-temporary).
+- Auth gate jasno komunikuje fanowi konieczność logowania przed merchem/biletami.
+
+---
+
+## 22. Sprint 17-18 hot-fix #2 - UI Dictionary (mikro-copywriting w pełni z CMS)
+
+Status: `Done`  
+Cel: domknąć wymóg „żadnych tekstów na sztywno w kodzie" zgodnie z architektonicznym blueprintem trzech filarów (encje biznesowe / branding / mikro-copywriting). Dodajemy trzeci filar — słownik UI sterowany z panelu admina, konsumowany w aplikacji mobilnej.
+
+### Zrealizowane
+
+- **Backend - moduł UiDictionary + cache**:
+  - [UiDictionaryEntry.java](backend/src/main/java/com/bandhub/zsi/cms/domain/UiDictionaryEntry.java): encja `ui_dictionary` (PK = `key_name VARCHAR(150)`, `value TEXT`, `description`, audyt). Statyczne fabryki `create(...)` / metoda `update(...)` walidują niepuste klucze i wartości (`Assert.hasText`).
+  - [UiDictionaryRepository.java](backend/src/main/java/com/bandhub/zsi/cms/UiDictionaryRepository.java): `JpaRepository<UiDictionaryEntry, String>`, package-private (kapsułkowanie modułu CMS).
+  - [UiDictionaryService.java](backend/src/main/java/com/bandhub/zsi/cms/UiDictionaryService.java): operacje CRUD + `getFlatDictionary()` zwracający `Map<String,String>`. Adnotacje:
+    - `@Cacheable(value = "uiDictionary", key = "'flat'")` — pojedynczy wpis w cache, klucz statyczny.
+    - `@CacheEvict(value = "uiDictionary", allEntries = true)` na każdej mutacji (`create/update/delete`) — gwarancja, że po edycji w adminie nie wisi stary stan.
+  - [UiDictionaryAdminController.java](backend/src/main/java/com/bandhub/zsi/cms/UiDictionaryAdminController.java): pełny CRUD (`GET/POST/PUT/DELETE /api/admin/ui-dictionary[...]`), `@PreAuthorize("hasRole('ADMIN')")`.
+  - [UiDictionaryPublicController.java](backend/src/main/java/com/bandhub/zsi/cms/UiDictionaryPublicController.java): `GET /api/public/ui-dictionary` zwraca płaską mapę `klucz → wartość` (kontrakt jak w `ngx-translate`/`i18next`).
+  - [V16__Ui_Dictionary.sql](backend/src/main/resources/db/migration/V16__Ui_Dictionary.sql): tabela + seed wszystkich kluczy używanych w aplikacji mobilnej (zakładki, etykiety, komunikaty empty-state, formularz auth, gate logowania) — komisja widzi, że ani jeden tekst nie żyje w kodzie kliencie.
+  - DTO walidowane Bean Validation: [CreateUiDictionaryEntryRequest.java](backend/src/main/java/com/bandhub/zsi/cms/dto/CreateUiDictionaryEntryRequest.java), [UpdateUiDictionaryEntryRequest.java](backend/src/main/java/com/bandhub/zsi/cms/dto/UpdateUiDictionaryEntryRequest.java), [UiDictionaryEntryResponse.java](backend/src/main/java/com/bandhub/zsi/cms/dto/UiDictionaryEntryResponse.java).
+- **Backend - włączenie cache + cache na SiteSettings**:
+  - [BackendApplication.java](backend/src/main/java/com/bandhub/zsi/BackendApplication.java): dodano `@EnableCaching` na klasie głównej.
+  - [SiteSettingsAdminService.java](backend/src/main/java/com/bandhub/zsi/cms/SiteSettingsAdminService.java): metoda `getSettings()` opatrzona `@Cacheable("siteSettings")`, `updateSettings(...)` opatrzone `@CacheEvict(allEntries = true)`. Zgodnie z rekomendacją blueprintu: dane czytane przy każdym starcie aplikacji powinny być cache'owane.
+- **Admin web - słownik UI z inline-edycją**:
+  - [ui-dictionary-list.component.ts](zsi-admin-web/src/app/features/cms/ui-dictionary/ui-dictionary-list.component.ts): widok tabeli (Klucz | Wartość | Opis | Akcje) na Angular Signals + filtr `computed` po prefixie/wartości. Przyciski „Zapisz" aktywne tylko gdy `isDirty(row)`. Formularz „Dodaj klucz" + diagnostyka błędów backendu (`status 0 / CORS`, timeout, Keycloak msg). Operacja delete chroniona `confirm(...)`.
+  - [cms.service.ts](zsi-admin-web/src/app/core/services/cms.service.ts): rozszerzony o `getUiDictionary()` / `createUiDictionaryEntry()` / `updateUiDictionaryEntry(key, req)` / `deleteUiDictionaryEntry(key)` + interfejsy DTO.
+  - Routing: `/admin/ui-dictionary` w [app.routes.ts](zsi-admin-web/src/app/app.routes.ts), pozycja w sidebarze ([admin-layout.component.ts](zsi-admin-web/src/app/layout/admin-layout.component.ts), sekcja „CMS / Treści" → „Słownik UI").
+- **Mobile - provider słownika + helper `t()`**:
+  - [DictionaryProvider.tsx](bandhub-mobile/providers/DictionaryProvider.tsx): kontekst React, na starcie aplikacji ładuje `/api/public/ui-dictionary` (fetchUiDictionary), trzyma mapę w stanie, eksponuje `t(key, fallback)`. Hook `useText()` zwraca samą funkcję — wygodniejsze API w komponentach. Fallback z drugiego argumentu pełni rolę „domyślnej wartości" w razie awarii backendu lub świeżo dodanego klucza.
+  - [_layout.tsx (root)](bandhub-mobile/app/_layout.tsx): nowa hierarchia `AuthProvider → DictionaryProvider → BrandingProvider → CartProvider`.
+  - [api.ts](bandhub-mobile/lib/api.ts): klient `fetchUiDictionary()` typowany jako `Promise<Record<string,string>>`.
+- **Mobile - zamiana hardcodowanych tekstów na klucze**:
+  - [(tabs)/_layout.tsx](bandhub-mobile/app/(tabs)/_layout.tsx): `tabBarLabel` i `title` każdej zakładki (`tabs.home`, `tabs.concerts`, `tabs.merch`, `tabs.tickets`, `tabs.account`).
+  - [(tabs)/index.tsx](bandhub-mobile/app/(tabs)/index.tsx): nagłówki sekcji + empty-state'y (`home.section.*`, `home.empty.*`).
+  - [(tabs)/account.tsx](bandhub-mobile/app/(tabs)/account.tsx): tytuł/podtytuł guest, powitanie zalogowanego, sekcja zamówień, empty-state, przycisk wyloguj (`account.title.guest`, `account.subtitle.guest`, `account.greeting`, `account.subtitle.user`, `account.section.orders`, `account.empty.orders`, `account.button.logout`).
+  - [(tabs)/tickets.tsx](bandhub-mobile/app/(tabs)/tickets.tsx): tytuł, gate message, podtytuł, empty, etykiety wpisu (`tickets.title`, `tickets.subtitle`, `tickets.empty`, `tickets.gate.message`, `tickets.label.purchasedAt`, `tickets.label.codes`).
+  - [(tabs)/merch.tsx](bandhub-mobile/app/(tabs)/merch.tsx): tytuł, podtytuł, etykieta przycisku koszyka, empty, gate, etykieta `Stan` (`merch.title`, `merch.subtitle`, `merch.button.cart`, `merch.empty`, `merch.gate.message`, `merch.label.stock`).
+  - [components/ui/AuthForm.tsx](bandhub-mobile/components/ui/AuthForm.tsx): wszystkie taby, etykiety pól, placeholdery, podtytuły i przyciski są zasilane z `t(...)` (`auth.tab.login`, `auth.tab.register`, `auth.label.username`, `auth.label.password`, `auth.label.email`, `auth.label.firstName`, `auth.label.lastName`, `auth.placeholder.username`, `auth.placeholder.password`, `auth.placeholder.email`, `auth.subtitle.login`, `auth.subtitle.register`, `auth.button.login`, `auth.button.register`, `auth.error.generic`).
+  - [components/ui/RequireAuth.tsx](bandhub-mobile/components/ui/RequireAuth.tsx): tytuł, opis i CTA gate'a logowania (`require_auth.title`, `require_auth.message`, `require_auth.cta`); fallbacki w kodzie pełnią rolę „kopii zapasowej".
+
+### Kontrakty API
+
+- `GET /api/public/ui-dictionary` → `Map<String, String>` (płaski JSON), permit-all. Backend cache'uje wynik (`uiDictionary`), więc kolejne starty appki są darmowe dla bazy.
+- `GET /api/admin/ui-dictionary` → `List<UiDictionaryEntryResponse>` (rola `ADMIN`).
+- `POST /api/admin/ui-dictionary` → `201 Created`, body `UiDictionaryEntryResponse`. Walidacja: `key` `@NotBlank @Size(max=150)`, `value` `@NotBlank`. Wyrzuca `IllegalArgumentException` przy duplikacie klucza (mapowane na `400`).
+- `PUT /api/admin/ui-dictionary/{key}` → `200 OK`, body `UiDictionaryEntryResponse`. Aktualizuje `value` i `description`, audyt `updatedBy` z `Authentication.getName()`.
+- `DELETE /api/admin/ui-dictionary/{key}` → `204 No Content`, `EntityNotFoundException` (`404`) gdy klucz nie istnieje.
+
+### Flow E2E (obrona): zmiana etykiety w słowniku → mobilka
+
+| Krok | Aktor | Akcja | Endpoint / UI | Oczekiwany efekt |
+|------|--------|--------|---------------|------------------|
+| 1 | Manager | Loguje się do panelu admina, wchodzi w „CMS / Treści → Słownik UI" | Angular `/admin/ui-dictionary` | Tabela kluczy + filtr |
+| 2 | Manager | Filtruje po `tickets.title`, zmienia wartość z „Moje bilety" na „Moje wejściówki", klika „Zapisz" | `PUT /api/admin/ui-dictionary/tickets.title` | `200 OK` + `updatedAt` w odpowiedzi; backend invaliduje cache `uiDictionary` |
+| 3 | Backend | Następne `GET /api/public/ui-dictionary` przelicza mapę raz i cache'uje | `@Cacheable("uiDictionary")` | Spójna mapa dla wszystkich klientów |
+| 4 | Fan (mobile) | Restart appki | `DictionaryProvider` na starcie woła `fetchUiDictionary()` | Nowa mapa zapisana w stanie |
+| 5 | Fan | Otwiera zakładkę „Bilety" | `useText()(`tickets.title`)` | Widzi „Moje wejściówki" — bez deploymentu mobilki |
+
+### Flow E2E (defensywny): backend offline / brak klucza
+
+| Krok | Akcja | Efekt |
+|------|--------|--------|
+| 1 | `fetchUiDictionary()` rzuca błędem (np. `Failed to fetch`) | `entries = {}`, `error` ustawiony, ale aplikacja **nie** się crashuje |
+| 2 | Komponent woła `t('account.button.logout', 'Wyloguj')` | Ponieważ `entries['account.button.logout']` jest `undefined`, helper zwraca fallback `'Wyloguj'` |
+| 3 | Manager doda nowy klucz `home.banner.cta` w panelu, ale mobilka jeszcze go nie używa | Brak ruchu w UI; nieużywane klucze nie kosztują nic poza wierszem w bazie |
+
+### Decyzje techniczne (klasy - dlaczego tak)
+
+- **PK = klucz tekstowy, nie UUID**: klucz słownika jest stabilny i ludzki (`auth.button.login`), ma przewagę nad sztucznym ID — w samym JSON-ie publicznym i tak operujemy kluczami, więc trzymanie ich jako PK eliminuje konieczność ekstra mapowania.
+- **`@Cacheable("uiDictionary")` z kluczem `'flat'`**: jedna mapa, jedna pozycja w cache. Mutacje robią `@CacheEvict(allEntries = true)`, bo i tak rebuild jest tani (lista wpisów słownika jest mała). Jest to świadome podejście dla MVP — w produkcji można rozważyć cache na pojedyncze klucze.
+- **Płaska mapa zamiast struktury zagnieżdżonej**: kontrakt zgodny z popularnymi bibliotekami i18n (`i18next`, `ngx-translate`). Klient nie musi parsować zagnieżdżeń, a backend nie musi grupować — krócej i prościej, łatwiej zaprezentować na obronie.
+- **Helper `t(key, fallback)` zamiast pipe'a**: w React Native nie ma pipe'ów, więc używamy hooka `useText()` i wywołania `t('key', 'fallback')`. Fallback w kodzie pełni rolę awaryjnej kopii treści — w razie awarii backendu/cache appka jest dalej użyteczna i nie pokazuje gołych kluczy.
+- **Inline-edycja w panelu**: w jednym widoku manager filtruje + edytuje wiele kluczy. Kompaktowo i ergonomicznie — brak konieczności przechodzenia do osobnego ekranu detali (zgodnie z rekomendacją blueprintu „Tabela (Klucz | Wartość) z możliwością edycji w locie").
+- **Brak APP_INITIALIZER w mobilce**: zamiast blokować start appki, korzystamy z `DictionaryProvider` z fallbackiem. Daje to lepsze UX (appka nie wisi przy zerowym połączeniu) i zachowuje invariant: każdy widoczny tekst ma klucz.
+- **Granica modułu**: `UiDictionaryRepository` jest package-private — nie wychodzi poza pakiet `com.bandhub.zsi.cms`. Zgodne z hexagonalnym podziałem (port: `UiDictionaryService`, adapter HTTP: dwa kontrolery).
+
+### Ryzyka / otwarte tematy
+
+- Cache w mobilce trzymany jest tylko w pamięci procesu — restart aplikacji wymusza ponowne pobranie. Można dorzucić `AsyncStorage` jako warstwę offline, ale dla projektu inżynierskiego MVP wystarcza.
+- Nie obsługujemy wielojęzyczności — jedna wartość per klucz. Wymagałoby dodania kolumny `lang_tag` i przepuszczenia `Accept-Language`. To naturalne rozszerzenie, ale poza zakresem MVP.
+- Markdown rendering dla `aboutText` / długich artykułów — pozostawione jako follow-up; obecnie plain text. Migracja do `react-native-markdown-display` to czysto frontowa zmiana.
+- Sztywne tytuły nagłówków `Stack.Screen` w `_layout.tsx` (np. „Aktualnosc", „Setlista", „Bilet") nie przeszły jeszcze przez słownik. Etykiety w karcie nawigacji są sterowane z dictionary; nagłówki ekranów detalu warto przenieść w drugiej iteracji.
+
+### Wplyw na wymagania projektu
+
+- **Domyka wymóg projektu** „Sterowanie wszystkimi widocznymi aktualnościami, opisami, zdjęciami itd. powinno odbywać się z poziomu administracyjnej części systemu (żadnych tekstów lub zmiennych grafik nie można umieszczać na sztywno w kodzie)". Trzy filary blueprintu są wdrożone:
+  1. **Encje biznesowe** (news, concerts, gallery, setlists) — sprinty 1–16.
+  2. **Branding globalny (SiteSettings)** — sprint 17–18 hot-fix #1.
+  3. **Mikro-copywriting (UI Dictionary)** — ten sprint.
+- Demonstruje praktyki inżynieryjne na obronę: hexagonalny podział, cache (`@Cacheable` + `@CacheEvict`), Bean Validation, JPA entity invariants (`Assert.hasText`), reactive Angular Signals, defensywne fallbacki w kliencie.
+
+---
+
+## 23. Sprint 17-18 hot-fix #3 - Auth proxy (Backend-for-Frontend) + walidacja rejestracji
+
+Status: `Done`  
+Cel: domknąć rejestrację i logowanie fana w aplikacji mobilnej. Fan blokowany był na dwóch frontach: surowy błąd Keycloaka `error-username-invalid-character` (spacja w nazwie użytkownika) oraz CORS na bezpośrednim wywołaniu `:8081/protocol/openid-connect/token` z origin Expo Web (`:8082`). Rozwiązanie: trzy warstwy obrony przy walidacji + Backend-for-Frontend dla logowania.
+
+### Zrealizowane
+
+- **Backend - walidacja rejestracji (3 warstwy)**:
+  - [FanRegistrationRequest.java](backend/src/main/java/com/bandhub/zsi/fan/dto/FanRegistrationRequest.java): pole `username` opatrzone `@Pattern(regexp = "^[A-Za-z0-9._@-]+$")` zgodnym z domyślnym User Profile Keycloaka. Polskie `message` dla każdego naruszenia (`@NotBlank`, `@Size`, `@Pattern`).
+  - [UserAdminService.translateKeycloakError](backend/src/main/java/com/bandhub/zsi/user/UserAdminService.java): mapper znanych kodów błędów Keycloaka (`error-username-invalid-character`, `User exists with same username/email`, `password policy`, `error-invalid-email`, `error-user-attribute-required`) na czytelny PL komunikat. Nieznane kody trafiają do generycznego komunikatu z surowym body — zachowujemy diagnostykę.
+- **Backend - auth proxy (BFF dla mobilki)**:
+  - [FanAuthService.java](backend/src/main/java/com/bandhub/zsi/fan/FanAuthService.java): metoda `login(LoginRequest)` wywołuje password grant na Keycloak token endpoint przez `org.springframework.web.client.RestClient`. Pobiera `access_token`, `refresh_token`, `expires_in`, `token_type` i mapuje na DTO. Lokalna metoda `translateLoginError(...)` mapuje błędy 401/`invalid_grant` (zła nazwa/hasło), `account disabled`, `account is not fully set up`, `invalid_client` na PL.
+  - [FanAuthPublicController.java](backend/src/main/java/com/bandhub/zsi/fan/FanAuthPublicController.java): `POST /api/public/auth/login` (permitAll). Body: `LoginRequest { username, password }`. Response: `LoginResponse { accessToken, refreshToken, expiresIn, tokenType }`.
+  - DTO: [LoginRequest.java](backend/src/main/java/com/bandhub/zsi/fan/dto/LoginRequest.java), [LoginResponse.java](backend/src/main/java/com/bandhub/zsi/fan/dto/LoginResponse.java). `LoginRequest` ma `@NotBlank` na obu polach.
+  - [application.properties](backend/src/main/resources/application.properties): nowe propsy `app.keycloak.issuer-uri` i `app.keycloak.public-client-id` jako konfiguracja serwisu.
+- **Mobile - kontrakt z backendem zamiast Keycloaka**:
+  - [AuthProvider.tsx](bandhub-mobile/providers/AuthProvider.tsx): `login()` woła `apiRequest('/api/public/auth/login', { method: 'POST', body: { username, password } })` zamiast bezpośredniego `fetch` do `:8081`. Usunięty pomocnik `parseKeycloakError(...)` i import `config.keycloakIssuer/keycloakClientId` (już niepotrzebne — Keycloak issuer żyje tylko po stronie backendu).
+- **Mobile - czytelne błędy z backendu**:
+  - [lib/http.ts](bandhub-mobile/lib/http.ts): nowa klasa `ApiError extends Error` z polami `status` i `validationErrors`. Funkcja `parseErrorPayload(text, status)` parsuje `ApiErrorResponse` z `RestExceptionHandler` — jeśli są `validationErrors` (`{ field → message }`), formatuje je per-pole; w innym wypadku bierze `message`. Koniec ze surowym JSON-em w UI.
+- **Mobile - walidacja w AuthForm jeszcze przed submitem**:
+  - [components/ui/AuthForm.tsx](bandhub-mobile/components/ui/AuthForm.tsx): regex `USERNAME_REGEX = /^[A-Za-z0-9._@-]+$/` i `PASSWORD_MIN_LENGTH = 8` jako moduł-stałe. Dwa `useMemo`-y zwracające `usernameValidationError`/`passwordValidationError` w trybie rejestracji. Stylowanie: `inputError` (czerwona ramka), `fieldHint` (szary szept pod polem), `fieldError` (czerwony komunikat). `submitDisabled` agregat blokuje przycisk dopóki walidacja nie przejdzie.
+- **CMS - klucze auth.error.\* w słowniku UI**:
+  - [V17__Ui_Dictionary_Auth_Hints.sql](backend/src/main/resources/db/migration/V17__Ui_Dictionary_Auth_Hints.sql): nowa migracja dorzucająca klucze `auth.hint.username`, `auth.error.username.tooShort`, `auth.error.username.invalidCharacter`, `auth.error.password.tooShort` z `ON CONFLICT (key_name) DO NOTHING` (idempotentnie). Manager może modyfikować te komunikaty z panelu „Słownik UI" bez ingerencji w kod, fallback w kodzie zostaje jako safety net.
+
+### Kontrakty API
+
+- `POST /api/public/auth/login` → `LoginResponse { accessToken, refreshToken, expiresIn, tokenType }`. PermitAll. Walidacja `@NotBlank` na obu polach (400 z `validationErrors`).
+- `POST /api/public/register` → `FanRegistrationResponse { userId, username }`. Walidacja DTO (`@Pattern`, `@Size`, `@NotBlank`, `@Email`) wraca z 400 + `validationErrors` zanim w ogóle uderzymy w Keycloaka. Błędy Keycloaka tłumaczymy w `UserAdminService.translateKeycloakError(...)`.
+
+### Flow E2E (obrona): rejestracja + auto-login fana
+
+| Krok | Aktor | Akcja | Endpoint / UI | Oczekiwany efekt |
+|------|--------|--------|---------------|------------------|
+| 1 | Fan | Wpisuje `Michal fan` w formularzu rejestracji | `AuthForm` | Walidacja w UI: regex blokuje spację, czerwona ramka i komunikat z `auth.error.username.invalidCharacter`, przycisk „Zarejestruj się" zablokowany |
+| 2 | Fan | Poprawia na `michalfan`, hasło `passw0rd!`, klika „Zarejestruj się" | `POST /api/public/register` | DTO przechodzi `@Pattern`, `FanRegistrationService` tworzy usera w Keycloaku z rolą FAN |
+| 3 | App | `register()` w AuthProvider od razu woła `login()` | `POST /api/public/auth/login` | `FanAuthService` robi password grant po stronie serwera (brak CORS na Keycloaku) i zwraca `accessToken` |
+| 4 | App | Zapis tokenu w `AsyncStorage`, dekodowanie `preferred_username` z JWT | `lib/storage`, `decodeUsernameFromJwt` | Stan `isAuthenticated = true`, fan widzi zakładkę Konto z imieniem |
+
+### Flow E2E (negatywny): login z błędnym hasłem
+
+| Krok | Aktor | Akcja | Endpoint / UI | Oczekiwany efekt |
+|------|--------|--------|---------------|------------------|
+| 1 | Fan | Wpisuje `michalfan` + `bad-pass` | `AuthForm` | Submit |
+| 2 | Backend | `RestClient` dostaje 401 z Keycloaka z body `{"error":"invalid_grant",...}` | `FanAuthService.translateLoginError` | Rzuca `IllegalArgumentException("Nieprawidlowa nazwa uzytkownika lub haslo.")` |
+| 3 | App | `apiRequest` parsuje `ApiErrorResponse` i tworzy `ApiError(message, 400)` | `lib/http.parseErrorPayload` | Komunikat „Nieprawidłowa nazwa użytkownika lub hasło." pod formularzem |
+
+### Decyzje techniczne (klasy - dlaczego tak)
+
+- **Backend-for-Frontend dla loginu**: mobilka rozmawia tylko z `:8080`. To jednolity entry point, brak konfigurowania Web Origins na realmie Keycloaka, brak ryzyka, że demo-port Expo (`:8082`, `:19006`) nie jest na białej liście. Komisja zobaczy, że świadomie ograniczyliśmy „surface area" CORS-a.
+- **`RestClient` zamiast `WebClient` lub niskopoziomowego HTTP**: Spring 6.1+ oferuje synchroniczny, deklaratywny klient idealny do prostych proxy-call'i. Brak zależności od `spring-webflux`, kod krótszy niż `RestTemplate`.
+- **`@Pattern` zsynchronizowany z Keycloak User Profile**: zamiast czekać na 400 z realmu, walidujemy DTO regexem zgodnym z domyślnym profilem Keycloaka. To eliminuje całą klasę błędów (`error-username-invalid-character`) bez dotykania konfiguracji realmu — zysk dla portability projektu (wystarczy uruchomić Keycloaka z domyślnym User Profile, żadnego custom-policy).
+- **Mapper błędów Keycloaka po polsku**: zamiast wyrzucać surowy `{"errorMessage":"User exists with same username","field":"username"}` na ekran fana, tłumaczymy znane kody na PL. Nieznane wpadają w fallback z surowym body — pomaga w trakcie developmentu / testów.
+- **Klasa `ApiError` w mobilce**: zachowanie typu wyjątku z `status` i `validationErrors`. To otwiera drogę do bardziej zaawansowanej obsługi (np. „dodaj komunikat pod konkretnym polem" zamiast w `<Text style={styles.error}>`), ale na MVP wystarczy do ładnego sformatowania.
+- **Walidacja po stronie klienta + serwera**: defense-in-depth. UI pokazuje hint zanim fan wyśle requesta, backend i tak waliduje raz jeszcze. Dwa filtry, dwa różne komunikaty fallbackowe — żaden surowy 500 nie wycieknie do mobilki.
+- **Migracja idempotentna `ON CONFLICT DO NOTHING`**: V17 nie zepsuje się, jeśli ktoś wcześniej dodał te klucze ręcznie z panelu „Słownik UI" — projekt inżynierski powinien wytrzymać re-run migracji bez sztucznych „undo".
+
+### Ryzyka / otwarte tematy
+
+- **Refresh token tracony**: backend zwraca `refreshToken` w `LoginResponse`, ale mobilka go nie używa — po wygaśnięciu access tokenu fan zaloguje się ponownie. Implementacja `POST /api/public/auth/refresh` to follow-up (analogiczne proxy do password grantu).
+- **Brak rate-limiting na `/api/public/auth/login`**: w produkcji potrzebny jest limit prób (np. Spring Cloud Gateway z `RequestRateLimiter` lub Bucket4j). Na MVP polegamy na Keycloaku, który ma `Brute Force Detection` w realmie.
+- **`Direct Access Grants Enabled` musi być włączony na kliencie publicznym**: opisane już w sekcji 20, dotyczy obu hot-fixów.
+- **Logout nie odwołuje sesji w Keycloaku**: usuwamy tylko lokalny token. Pełny logout wymagałby `POST /protocol/openid-connect/logout` z `refresh_token` — jak refresh, follow-up.
+
+### Wpływ na wymagania projektu
+
+- Domyka funkcjonalność rejestracji i logowania w mobilce (warunek konieczny do testów ticketingu i merchu).
+- Wzmacnia argumentację „spójność warstwy klienckiej": admin web używa standardowego OIDC (PKCE), mobilka używa proxy do password granta — oba scenariusze obsłużone, ale mobilka NIE eksponuje konfiguracji Keycloaka (publiczny client id) w aplikacji co dla projektu inżynierskiego jest dobrym argumentem o ograniczaniu „attack surface".
+- Demonstruje praktyki inżynieryjne: defense-in-depth (walidacja klient + serwer), Backend-for-Frontend, mapping kodów Keycloaka, idempotentne migracje słownika UI.
+
+---
+
+## 24. Miejsce na kolejne podsumowania
 
 Kolejne wpisy dodajemy sekcyjnie:
 

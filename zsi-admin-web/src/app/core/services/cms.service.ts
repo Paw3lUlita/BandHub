@@ -36,6 +36,41 @@ export interface CreateNewsRequest {
   imageUrl: string;
 }
 
+export interface SiteSettings {
+  bandName: string;
+  tagline?: string | null;
+  heroImageUrl?: string | null;
+  aboutText?: string | null;
+  updatedAt?: string;
+  updatedBy?: string | null;
+}
+
+export interface UpdateSiteSettingsRequest {
+  bandName: string;
+  tagline?: string | null;
+  heroImageUrl?: string | null;
+  aboutText?: string | null;
+}
+
+export interface UiDictionaryEntry {
+  key: string;
+  value: string;
+  description?: string | null;
+  updatedAt?: string;
+  updatedBy?: string | null;
+}
+
+export interface CreateUiDictionaryEntryRequest {
+  key: string;
+  value: string;
+  description?: string | null;
+}
+
+export interface UpdateUiDictionaryEntryRequest {
+  value: string;
+  description?: string | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class CmsService {
   private http = inject(HttpClient);
@@ -94,5 +129,31 @@ export class CmsService {
 
   deleteNews(id: string): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/news/${id}`);
+  }
+
+  // --- USTAWIENIA STRONY (BRAND/HERO/ABOUT) ---
+  getSiteSettings(): Observable<SiteSettings> {
+    return this.http.get<SiteSettings>(`${this.apiUrl}/site-settings`);
+  }
+
+  updateSiteSettings(request: UpdateSiteSettingsRequest): Observable<SiteSettings> {
+    return this.http.put<SiteSettings>(`${this.apiUrl}/site-settings`, request);
+  }
+
+  // --- SLOWNIK UI (mikro-copywriting) ---
+  getUiDictionary(): Observable<UiDictionaryEntry[]> {
+    return this.http.get<UiDictionaryEntry[]>(`${this.apiUrl}/ui-dictionary`);
+  }
+
+  createUiDictionaryEntry(request: CreateUiDictionaryEntryRequest): Observable<UiDictionaryEntry> {
+    return this.http.post<UiDictionaryEntry>(`${this.apiUrl}/ui-dictionary`, request);
+  }
+
+  updateUiDictionaryEntry(key: string, request: UpdateUiDictionaryEntryRequest): Observable<UiDictionaryEntry> {
+    return this.http.put<UiDictionaryEntry>(`${this.apiUrl}/ui-dictionary/${encodeURIComponent(key)}`, request);
+  }
+
+  deleteUiDictionaryEntry(key: string): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/ui-dictionary/${encodeURIComponent(key)}`);
   }
 }

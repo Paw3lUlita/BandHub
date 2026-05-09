@@ -6,5 +6,7 @@ package com.bandhub.zsi.reporting.dto;
 public enum BusinessReportType {
     MERCH,
     TICKETING_EVENT,
-    TOUR_PROFITABILITY
+    TOUR_PROFITABILITY,
+    /** Wydruk DOCX rozliczenia trasy (szablon użytkownika, Sprint 16). */
+    TOUR_SETTLEMENT_DOCX
 }

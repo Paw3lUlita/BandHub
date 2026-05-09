@@ -96,6 +96,12 @@ import { OidcSecurityService } from 'angular-auth-oidc-client';
 
           <li class="menu-title mt-4">CMS / Treści</li>
           <li>
+            <a routerLink="/admin/site-settings" routerLinkActive="active">Ustawienia strony</a>
+          </li>
+          <li>
+            <a routerLink="/admin/ui-dictionary" routerLinkActive="active">Słownik UI</a>
+          </li>
+          <li>
             <a routerLink="/admin/news" routerLinkActive="active">Aktualności</a>
           </li>
           <li>
@@ -155,6 +161,9 @@ import { OidcSecurityService } from 'angular-auth-oidc-client';
           <li class="menu-title mt-4">Raportowanie</li>
           <li>
             <a routerLink="/admin/reports/generator" routerLinkActive="active">Generator raportów</a>
+          </li>
+          <li>
+            <a routerLink="/admin/reports/docx-templates" routerLinkActive="active">Szablony DOCX</a>
           </li>
           <li>
             <a routerLink="/admin/reports/merch" routerLinkActive="active">Raport merchu</a>

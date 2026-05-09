@@ -67,7 +67,7 @@ public class UserAdminService {
         user.setLastName(request.lastName());
         user.setEmail(request.email());
         user.setEnabled(request.enabled());
-        user.setEmailVerified(false);
+        user.setEmailVerified(true);
 
         UsersResource users = realm().users();
         try (var response = users.create(user)) {
@@ -79,10 +79,54 @@ public class UserAdminService {
                 return id;
             }
             if (response.getStatus() == 409) {
-                throw new IllegalArgumentException("Użytkownik o podanej nazwie już istnieje");
+                throw new IllegalArgumentException("Użytkownik o podanej nazwie lub emailu już istnieje");
             }
-            throw new IllegalArgumentException("Nie udało się utworzyć użytkownika");
+            String body = readKeycloakError(response);
+            throw new IllegalArgumentException(translateKeycloakError(response.getStatus(), body));
         }
+    }
+
+    private String readKeycloakError(jakarta.ws.rs.core.Response response) {
+        try {
+            String body = response.readEntity(String.class);
+            return body != null ? body : "";
+        } catch (Exception ex) {
+            return "";
+        }
+    }
+
+    /**
+     * Tlumaczenie znanych kodow bledow Keycloaka na czytelny PL komunikat.
+     * Na 400 z User Profile API Keycloak zwraca JSON typu
+     * {"field":"username","errorMessage":"error-username-invalid-character", ...}.
+     * Mapping pokrywa najczestsze przypadki rejestracji fana - reszta wpada w generyczny komunikat
+     * z surowym body, zeby ulatwic diagnostyke.
+     */
+    private String translateKeycloakError(int status, String body) {
+        String safeBody = body == null ? "" : body;
+        String lower = safeBody.toLowerCase();
+
+        if (lower.contains("error-username-invalid-character")) {
+            return "Nazwa użytkownika może zawierać tylko litery, cyfry oraz znaki . _ - @ (bez spacji).";
+        }
+        if (lower.contains("error-invalid-email") || lower.contains("invalid email")) {
+            return "Niepoprawny adres email.";
+        }
+        if (lower.contains("user exists with same username")) {
+            return "Użytkownik o podanej nazwie już istnieje.";
+        }
+        if (lower.contains("user exists with same email")) {
+            return "Użytkownik z tym adresem email już istnieje.";
+        }
+        if (lower.contains("password policy") || lower.contains("invalidpasswordmin")) {
+            return "Hasło nie spełnia wymagań polityki bezpieczeństwa (minimum 8 znaków).";
+        }
+        if (lower.contains("error-user-attribute-required")) {
+            return "Brakuje wymaganego pola profilu użytkownika.";
+        }
+
+        return "Nie udało się utworzyć użytkownika (Keycloak " + status
+                + (safeBody.isBlank() ? "" : ": " + safeBody) + ")";
     }
 
     public void resetPassword(String userId, ResetPasswordRequest request) {

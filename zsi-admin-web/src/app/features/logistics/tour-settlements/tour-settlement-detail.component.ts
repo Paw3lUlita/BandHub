@@ -1,6 +1,7 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CurrencyPipe, DatePipe } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { BusinessReportService } from '../../../core/services/business-report.service';
 import { TourSettlement, TourSettlementService } from '../../../core/services/tour-settlement.service';
 
 @Component({
@@ -26,7 +27,19 @@ import { TourSettlement, TourSettlementService } from '../../../core/services/to
               <div class="divider"></div>
               <p class="whitespace-pre-wrap">{{ s.notes }}</p>
             }
-            <div class="card-actions justify-end pt-4">
+            <div class="card-actions justify-end flex-wrap gap-2 pt-4">
+              <button
+                type="button"
+                class="btn btn-outline btn-sm"
+                [disabled]="downloading()"
+                (click)="downloadDocx()"
+              >
+                @if (downloading()) {
+                  <span class="loading loading-spinner loading-xs"></span>
+                } @else {
+                  Pobierz DOCX
+                }
+              </button>
               <a [routerLink]="['/admin/logistics', s.tourId]" class="btn btn-primary btn-sm">Panel trasy</a>
             </div>
           </div>
@@ -40,13 +53,33 @@ import { TourSettlement, TourSettlementService } from '../../../core/services/to
 export class TourSettlementDetailComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private service = inject(TourSettlementService);
+  private businessReports = inject(BusinessReportService);
 
   item = signal<TourSettlement | null>(null);
+  downloading = signal(false);
 
   ngOnInit() {
     const id = this.route.snapshot.paramMap.get('id');
     if (id) {
       this.service.getOne(id).subscribe(x => this.item.set(x));
     }
+  }
+
+  downloadDocx() {
+    const s = this.item();
+    if (!s?.tourId) return;
+    this.downloading.set(true);
+    this.businessReports.export('TOUR_SETTLEMENT_DOCX', 'docx', { tourId: s.tourId }).subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `tour-settlement-${s.tourId}.docx`;
+        a.click();
+        URL.revokeObjectURL(url);
+        this.downloading.set(false);
+      },
+      error: () => this.downloading.set(false)
+    });
   }
 }

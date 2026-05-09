@@ -5,6 +5,7 @@ import { toObservable } from '@angular/core/rxjs-interop';
 import { switchMap } from 'rxjs';
 import { CmsService } from '../../../core/services/cms.service';
 import { ListPageControlsComponent, ListPageParams, SortOption } from '../../shared/list-page-controls.component';
+import { ApiUrlPipe } from '../../shared/api-url.pipe';
 
 const SORT_OPTIONS: SortOption[] = [
   { value: 'publishedDate', label: 'Data publikacji' },
@@ -15,7 +16,7 @@ const SORT_OPTIONS: SortOption[] = [
 @Component({
   selector: 'app-news-list',
   standalone: true,
-  imports: [AsyncPipe, DatePipe, RouterLink, ListPageControlsComponent],
+  imports: [AsyncPipe, DatePipe, RouterLink, ListPageControlsComponent, ApiUrlPipe],
   template: `
     <div class="overflow-x-auto">
       <div class="flex justify-between items-center mb-4">
@@ -48,7 +49,7 @@ const SORT_OPTIONS: SortOption[] = [
                 @if (news.imageUrl) {
                   <div class="avatar">
                     <div class="mask mask-squircle w-12 h-12">
-                      <img [src]="news.imageUrl" alt="Thumbnail" />
+                      <img [src]="news.imageUrl | apiUrl" alt="Thumbnail" />
                     </div>
                   </div>
                 } @else {

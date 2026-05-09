@@ -17,7 +17,7 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 /**
- * REST: generator raportów biznesowych (podgląd + eksport PDF/XLSX) z audytem w {@code report_runs} / {@code export_jobs}.
+ * REST: generator raportów biznesowych (podgląd + eksport PDF/XLSX/DOCX) z audytem w {@code report_runs} / {@code export_jobs}.
  */
 @RestController
 @RequestMapping("/api/admin/reports/business")
@@ -46,7 +46,7 @@ class BusinessReportsController {
     }
 
     /**
-     * Eksport pliku PDF lub XLSX + audyt {@code report_runs} i {@code export_jobs}.
+     * Eksport pliku PDF, XLSX lub DOCX + audyt {@code report_runs} i {@code export_jobs}.
      */
     @GetMapping("/export")
     ResponseEntity<byte[]> export(

@@ -2,12 +2,12 @@ import { Component, inject } from '@angular/core';
 import { AsyncPipe, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CmsService } from '../../../core/services/cms.service';
-import { Observable } from 'rxjs';
+import { ApiUrlPipe } from '../../shared/api-url.pipe';
 
 @Component({
   selector: 'app-gallery-list',
   standalone: true,
-  imports: [AsyncPipe, DatePipe, FormsModule],
+  imports: [AsyncPipe, DatePipe, FormsModule, ApiUrlPipe],
   template: `
     <div class="p-4">
       <h2 class="text-2xl font-bold mb-6">Galeria Zdjęć</h2>
@@ -41,7 +41,7 @@ import { Observable } from 'rxjs';
         @for (img of images$ | async; track img.id) {
           <div class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow">
             <figure class="h-40 relative group">
-              <img [src]="img.imageUrl" [alt]="img.title" class="object-cover w-full h-full" />
+              <img [src]="img.imageUrl | apiUrl" [alt]="img.title" class="object-cover w-full h-full" />
               <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                 <button class="btn btn-error btn-sm btn-circle" (click)="delete(img.id)">🗑️</button>
               </div>

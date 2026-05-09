@@ -4,7 +4,8 @@ import { FormsModule } from '@angular/forms';
 import {
   BusinessReportPreviewResponse,
   BusinessReportService,
-  BusinessReportType
+  BusinessReportType,
+  TourSettlementDocxPreviewPayload
 } from '../../core/services/business-report.service';
 import { Concert, ConcertService } from '../../core/services/concert.service';
 import { Tour, LogisticsService } from '../../core/services/logistics.service';
@@ -34,6 +35,7 @@ import { TourProfitability } from '../../core/services/logistics.service';
             <option value="MERCH">Merch — podsumowanie sprzedaży</option>
             <option value="TICKETING_EVENT">Ticketing — wydarzenie (koncert)</option>
             <option value="TOUR_PROFITABILITY">Logistyka — rentowność trasy</option>
+            <option value="TOUR_SETTLEMENT_DOCX">Logistyka — rozliczenie trasy (DOCX)</option>
           </select>
         </div>
 
@@ -60,7 +62,7 @@ import { TourProfitability } from '../../core/services/logistics.service';
           </div>
         }
 
-        @if (reportType === 'TOUR_PROFITABILITY') {
+        @if (reportType === 'TOUR_PROFITABILITY' || reportType === 'TOUR_SETTLEMENT_DOCX') {
           <div class="form-control">
             <label class="label"><span class="label-text">Trasa</span></label>
             <select class="select select-bordered select-sm min-w-[260px]" [(ngModel)]="tourId">
@@ -75,20 +77,31 @@ import { TourProfitability } from '../../core/services/logistics.service';
         <button class="btn btn-sm btn-primary" (click)="loadPreview()" [disabled]="!canPreview() || loading()">
           Podgląd
         </button>
-        <button
-          class="btn btn-sm btn-outline"
-          (click)="download('pdf')"
-          [disabled]="!canPreview() || loading()"
-        >
-          Pobierz PDF
-        </button>
-        <button
-          class="btn btn-sm btn-outline"
-          (click)="download('xlsx')"
-          [disabled]="!canPreview() || loading()"
-        >
-          Pobierz Excel
-        </button>
+        @if (reportType !== 'TOUR_SETTLEMENT_DOCX') {
+          <button
+            class="btn btn-sm btn-outline"
+            (click)="download('pdf')"
+            [disabled]="!canPreview() || loading()"
+          >
+            Pobierz PDF
+          </button>
+          <button
+            class="btn btn-sm btn-outline"
+            (click)="download('xlsx')"
+            [disabled]="!canPreview() || loading()"
+          >
+            Pobierz Excel
+          </button>
+        }
+        @if (reportType === 'TOUR_SETTLEMENT_DOCX') {
+          <button
+            class="btn btn-sm btn-outline"
+            (click)="download('docx')"
+            [disabled]="!canPreview() || loading()"
+          >
+            Pobierz DOCX
+          </button>
+        }
       </div>
 
       @if (loading()) {
@@ -172,6 +185,34 @@ import { TourProfitability } from '../../core/services/logistics.service';
             </div>
           </div>
         </div>
+      } @else if (docxPreview(); as dx) {
+        <div class="space-y-4">
+          <div class="alert alert-info text-sm">
+            <span
+              >Wydruk używa <strong>aktywnego</strong> szablonu DOCX modułu TOUR_SETTLEMENT.
+              @if (dx.activeTemplateName) {
+                Szablon: <strong>{{ dx.activeTemplateName }}</strong>
+              } @else {
+                Brak aktywnego szablonu — wgraj i aktywuj w „Szablony DOCX”.
+              }
+            </span>
+          </div>
+          <p class="text-sm">
+            Rozliczenie zapisane w bazie:
+            <strong>{{ dx.settlementPresent ? 'tak' : 'nie' }}</strong>
+            (placeholder settlement* wypełnią się po zamknięciu rozliczenia).
+          </p>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="card bg-base-100 shadow">
+              <div class="card-body">
+                <h3 class="card-title text-sm">Rentowność (jak w raporcie trasy)</h3>
+                <p class="text-sm">Koszty: {{ dx.profitability.totalCosts | currency: dx.profitability.currency : 'symbol' : '1.2-2' }}</p>
+                <p class="text-sm">Bilety: {{ dx.profitability.ticketRevenue | currency: dx.profitability.currency : 'symbol' : '1.2-2' }}</p>
+                <p class="text-sm">Bilans: {{ dx.profitability.balance | currency: dx.profitability.currency : 'symbol' : '1.2-2' }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
       }
     </div>
   `
@@ -210,6 +251,12 @@ export class ReportGeneratorComponent implements OnInit {
     return p.payload as TourProfitability;
   });
 
+  docxPreview = computed(() => {
+    const p = this.preview();
+    if (!p || p.reportType !== 'TOUR_SETTLEMENT_DOCX') return null;
+    return p.payload as TourSettlementDocxPreviewPayload;
+  });
+
   ngOnInit() {
     this.concertService.getAll().subscribe((list) => this.concerts.set(list));
     this.logisticsService.getAllTours().subscribe((list) => this.tours.set(list));
@@ -226,6 +273,7 @@ export class ReportGeneratorComponent implements OnInit {
       case 'TICKETING_EVENT':
         return !!this.concertId;
       case 'TOUR_PROFITABILITY':
+      case 'TOUR_SETTLEMENT_DOCX':
         return !!this.tourId;
       default:
         return false;
@@ -244,12 +292,12 @@ export class ReportGeneratorComponent implements OnInit {
     });
   }
 
-  download(format: 'pdf' | 'xlsx') {
+  download(format: 'pdf' | 'xlsx' | 'docx') {
     if (!this.canPreview()) return;
     this.loading.set(true);
     this.businessReports.export(this.reportType, format, this.opts()).subscribe({
       next: (blob) => {
-        const ext = format === 'pdf' ? 'pdf' : 'xlsx';
+        const ext = format === 'pdf' ? 'pdf' : format === 'docx' ? 'docx' : 'xlsx';
         const name = `${this.reportType.toLowerCase()}-report.${ext}`;
         this.triggerDownload(blob, name);
         this.loading.set(false);

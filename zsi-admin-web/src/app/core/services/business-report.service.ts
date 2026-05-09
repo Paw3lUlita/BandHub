@@ -5,11 +5,27 @@ import { MerchSalesSnapshot } from './merch-report.service';
 import { TicketingEventSnapshot } from './ticketing-event-report.service';
 import { TourProfitability } from './logistics.service';
 
-export type BusinessReportType = 'MERCH' | 'TICKETING_EVENT' | 'TOUR_PROFITABILITY';
+export type BusinessReportType =
+  | 'MERCH'
+  | 'TICKETING_EVENT'
+  | 'TOUR_PROFITABILITY'
+  | 'TOUR_SETTLEMENT_DOCX';
+
+export interface TourSettlementDocxPreviewPayload {
+  settlementPresent: boolean;
+  settlement: Record<string, unknown> | null;
+  profitability: TourProfitability;
+  activeTemplateId: string | null;
+  activeTemplateName: string | null;
+}
 
 export interface BusinessReportPreviewResponse {
   reportType: BusinessReportType;
-  payload: MerchSalesSnapshot | TicketingEventSnapshot | TourProfitability;
+  payload:
+    | MerchSalesSnapshot
+    | TicketingEventSnapshot
+    | TourProfitability
+    | TourSettlementDocxPreviewPayload;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -31,7 +47,7 @@ export class BusinessReportService {
 
   export(
     type: BusinessReportType,
-    format: 'pdf' | 'xlsx',
+    format: 'pdf' | 'xlsx' | 'docx',
     opts: { from?: string; to?: string; concertId?: string; tourId?: string }
   ): Observable<Blob> {
     let params = new HttpParams().set('type', type).set('format', format);

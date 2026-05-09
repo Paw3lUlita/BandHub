@@ -65,8 +65,12 @@ public class SecurityConfig {
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // ZEZWÓL NA ANGULARA (Port 4200):
-        configuration.setAllowedOrigins(List.of("http://localhost:4200"));
+        // Klienty dev: admin-web (Angular), Expo web (różne porty), narzędzia testowe.
+        // setAllowedOriginPatterns pozwala uzyc credentialsow z dynamicznymi portami localhost.
+        configuration.setAllowedOriginPatterns(List.of(
+                "http://localhost:*",
+                "http://127.0.0.1:*"
+        ));
 
         // ZEZWÓL NA METODY HTTP:
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
