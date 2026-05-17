@@ -5,6 +5,8 @@ import { Observable } from 'rxjs';
 export interface SetlistItem {
   id: string;
   setlistId: string;
+  setlistTitle?: string;
+  concertName?: string;
   songTitle: string;
   songOrder: number;
   durationSeconds: number | null;

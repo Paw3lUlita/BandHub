@@ -7,6 +7,7 @@ import com.bandhub.zsi.ticketing.domain.TicketRefund;
 import com.bandhub.zsi.ticketing.dto.CreateTicketRefundRequest;
 import com.bandhub.zsi.ticketing.dto.TicketRefundResponse;
 import com.bandhub.zsi.ticketing.dto.UpdateTicketRefundRequest;
+import com.bandhub.zsi.user.UserLookupService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,10 +21,19 @@ public class TicketRefundAdminService {
 
     private final TicketRefundRepository ticketRefundRepository;
     private final TicketOrderRepository ticketOrderRepository;
+    private final TicketRepository ticketRepository;
+    private final UserLookupService userLookupService;
 
-    public TicketRefundAdminService(TicketRefundRepository ticketRefundRepository, TicketOrderRepository ticketOrderRepository) {
+    public TicketRefundAdminService(
+            TicketRefundRepository ticketRefundRepository,
+            TicketOrderRepository ticketOrderRepository,
+            TicketRepository ticketRepository,
+            UserLookupService userLookupService
+    ) {
         this.ticketRefundRepository = ticketRefundRepository;
         this.ticketOrderRepository = ticketOrderRepository;
+        this.ticketRepository = ticketRepository;
+        this.userLookupService = userLookupService;
     }
 
     public UUID create(CreateTicketRefundRequest request) {
@@ -89,10 +99,26 @@ public class TicketRefundAdminService {
     }
 
     private TicketRefundResponse toResponse(TicketRefund refund) {
+        String username = null;
+        String ticketCode = null;
+        if (refund.getTicketOrder() != null) {
+            username = userLookupService.usernameOrId(refund.getTicketOrder().getUserId());
+        } else if (refund.getTicketId() != null) {
+            username = ticketRepository.findById(refund.getTicketId())
+                    .map(t -> userLookupService.usernameOrId(t.getUserId()))
+                    .orElse(null);
+        }
+        if (refund.getTicketId() != null) {
+            ticketCode = ticketRepository.findById(refund.getTicketId())
+                    .map(t -> t.getTicketCode())
+                    .orElse(null);
+        }
         return new TicketRefundResponse(
                 refund.getId(),
                 refund.getTicketOrder() == null ? null : refund.getTicketOrder().getId(),
                 refund.getTicketId(),
+                ticketCode,
+                username,
                 refund.getAmount().amount(),
                 refund.getAmount().currency(),
                 refund.getReason(),

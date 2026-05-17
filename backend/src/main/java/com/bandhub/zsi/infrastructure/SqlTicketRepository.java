@@ -5,6 +5,7 @@ import com.bandhub.zsi.ticketing.domain.Ticket;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -26,7 +27,13 @@ class SqlTicketRepository implements TicketRepository {
     public Optional<Ticket> findById(UUID id) {
         return jpaRepository.findById(id);
     }
+
+    @Override
+    public List<Ticket> findByTicketOrderId(UUID ticketOrderId) {
+        return jpaRepository.findByTicketOrder_Id(ticketOrderId);
+    }
 }
 
 interface JpaTicketEntityRepository extends JpaRepository<Ticket, UUID> {
+    List<Ticket> findByTicketOrder_Id(UUID ticketOrderId);
 }

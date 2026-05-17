@@ -1,21 +1,41 @@
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { Screen } from '@/components/ui/Screen';
-import { getTicketPurchases } from '@/lib/storage';
-import { LocalTicketPurchase } from '@/types/api';
+import { fetchMyTicketOrders } from '@/lib/api';
+import { MyTicketOrderResponse } from '@/types/api';
+import { useAuth } from '@/providers/AuthProvider';
 
 export default function TicketDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const [purchases, setPurchases] = useState<LocalTicketPurchase[]>([]);
+  const { token } = useAuth();
+  const [orders, setOrders] = useState<MyTicketOrderResponse[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getTicketPurchases().then(setPurchases);
-  }, []);
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+    fetchMyTicketOrders(token)
+      .then(setOrders)
+      .finally(() => setLoading(false));
+  }, [token]);
 
-  const purchase = useMemo(() => purchases.find((entry) => entry.id === id), [id, purchases]);
+  const order = useMemo(
+    () => orders.find((entry) => entry.orderId === id),
+    [id, orders],
+  );
 
-  if (!purchase) {
+  if (loading) {
+    return (
+      <Screen scroll={false} contentContainerStyle={styles.center}>
+        <ActivityIndicator color="#38bdf8" />
+      </Screen>
+    );
+  }
+
+  if (!order) {
     return (
       <Screen scroll={false} contentContainerStyle={styles.center}>
         <Text style={styles.error}>Nie znaleziono biletu.</Text>
@@ -25,12 +45,13 @@ export default function TicketDetailScreen() {
 
   return (
     <Screen>
-      <Text style={styles.title}>{purchase.concertName}</Text>
-      <Text style={styles.meta}>Order ID: {purchase.orderId}</Text>
-      <Text style={styles.meta}>Data: {new Date(purchase.purchasedAt).toLocaleString()}</Text>
+      <Text style={styles.title}>{order.concertName}</Text>
+      <Text style={styles.meta}>Order ID: {order.orderId}</Text>
+      <Text style={styles.meta}>Data: {new Date(order.createdAt).toLocaleString()}</Text>
+      <Text style={styles.meta}>Status: {order.status}</Text>
 
       <Text style={styles.section}>Kody biletow</Text>
-      {purchase.ticketCodes.map((code) => (
+      {order.ticketCodes.map((code) => (
         <View key={code} style={styles.codeBox}>
           <Text style={styles.code}>{code}</Text>
         </View>

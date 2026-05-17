@@ -1,3 +1,4 @@
+import { notifyUnauthorized } from '@/lib/authEvents';
 import { absoluteApiUrl } from '@/lib/config';
 
 type RequestOptions = {
@@ -75,6 +76,9 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
 
   if (!response.ok) {
     const text = await response.text();
+    if (response.status === 401) {
+      notifyUnauthorized();
+    }
     throw parseErrorPayload(text, response.status);
   }
 
@@ -106,6 +110,9 @@ export async function apiRequestRaw(path: string, options: RequestOptions = {}):
 
   if (!response.ok) {
     const text = await response.text();
+    if (response.status === 401) {
+      notifyUnauthorized();
+    }
     throw parseErrorPayload(text, response.status);
   }
 

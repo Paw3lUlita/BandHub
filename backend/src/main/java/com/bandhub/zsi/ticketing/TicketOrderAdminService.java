@@ -7,6 +7,7 @@ import com.bandhub.zsi.ticketing.domain.TicketOrder;
 import com.bandhub.zsi.ticketing.dto.CreateTicketOrderRequest;
 import com.bandhub.zsi.ticketing.dto.TicketOrderResponse;
 import com.bandhub.zsi.ticketing.dto.UpdateTicketOrderRequest;
+import com.bandhub.zsi.user.UserLookupService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,10 +21,16 @@ public class TicketOrderAdminService {
 
     private final TicketOrderRepository ticketOrderRepository;
     private final ConcertRepository concertRepository;
+    private final UserLookupService userLookupService;
 
-    public TicketOrderAdminService(TicketOrderRepository ticketOrderRepository, ConcertRepository concertRepository) {
+    public TicketOrderAdminService(
+            TicketOrderRepository ticketOrderRepository,
+            ConcertRepository concertRepository,
+            UserLookupService userLookupService
+    ) {
         this.ticketOrderRepository = ticketOrderRepository;
         this.concertRepository = concertRepository;
+        this.userLookupService = userLookupService;
     }
 
     public UUID create(CreateTicketOrderRequest request) {
@@ -79,7 +86,9 @@ public class TicketOrderAdminService {
         return new TicketOrderResponse(
                 order.getId(),
                 order.getUserId(),
+                userLookupService.usernameOrId(order.getUserId()),
                 order.getConcert().getId(),
+                order.getConcert().getName(),
                 order.getStatus(),
                 order.getTotalAmount().amount(),
                 order.getTotalAmount().currency(),

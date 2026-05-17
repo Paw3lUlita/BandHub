@@ -1,6 +1,7 @@
 package com.bandhub.zsi.fan;
 
 import com.bandhub.zsi.fan.dto.CreateSetlistRequest;
+import com.bandhub.zsi.fan.dto.SetlistItemResponse;
 import com.bandhub.zsi.fan.dto.SetlistResponse;
 import com.bandhub.zsi.fan.dto.UpdateSetlistRequest;
 import com.bandhub.zsi.shared.api.PageResponse;
@@ -19,9 +20,11 @@ import java.util.UUID;
 class SetlistAdminController {
 
     private final SetlistAdminService service;
+    private final SetlistItemAdminService setlistItemAdminService;
 
-    SetlistAdminController(SetlistAdminService service) {
+    SetlistAdminController(SetlistAdminService service, SetlistItemAdminService setlistItemAdminService) {
         this.service = service;
+        this.setlistItemAdminService = setlistItemAdminService;
     }
 
     @GetMapping
@@ -43,6 +46,11 @@ class SetlistAdminController {
     @GetMapping("/{id}")
     ResponseEntity<SetlistResponse> getOne(@PathVariable UUID id) {
         return ResponseEntity.ok(service.getOne(id));
+    }
+
+    @GetMapping("/{id}/items")
+    ResponseEntity<List<SetlistItemResponse>> getItems(@PathVariable UUID id) {
+        return ResponseEntity.ok(setlistItemAdminService.getBySetlistId(id));
     }
 
     @PostMapping

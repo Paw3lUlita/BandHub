@@ -6,6 +6,8 @@ export interface TicketRefund {
   id: string;
   ticketOrderId: string | null;
   ticketId: string | null;
+  ticketCode?: string | null;
+  username?: string | null;
   amount: number;
   currency: string;
   reason: string | null;

@@ -71,7 +71,9 @@ import { Observable } from 'rxjs';
                     <div class="timeline-middle">●</div>
                     <div class="timeline-end timeline-box">
                       {{ h.changedAt | date:'short' }}
-                      @if (h.changedBy) { <span class="text-xs opacity-70">({{ h.changedBy }})</span> }
+                      @if (h.changedByUsername || h.changedBy) {
+                        <span class="text-xs opacity-70">({{ h.changedByUsername || h.changedBy }})</span>
+                      }
                     </div>
                     <hr/>
                   </li>

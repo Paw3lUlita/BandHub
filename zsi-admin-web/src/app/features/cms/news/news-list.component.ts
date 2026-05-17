@@ -72,7 +72,7 @@ const SORT_OPTIONS: SortOption[] = [
               </td>
 
               <td>
-                <span class="badge badge-ghost badge-sm">{{ news.authorId }}</span>
+                <span class="badge badge-ghost badge-sm">{{ news.authorUsername || news.authorId }}</span>
               </td>
 
               <td class="text-right">

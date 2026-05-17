@@ -12,7 +12,7 @@ const USERNAME_REGEX = /^[A-Za-z0-9._@-]+$/;
 const PASSWORD_MIN_LENGTH = 8;
 
 export function AuthForm() {
-  const { login, register } = useAuth();
+  const { login, register, sessionExpired, clearSessionExpired } = useAuth();
   const t = useText();
   const [mode, setMode] = useState<Mode>('login');
   const [username, setUsername] = useState('');
@@ -98,6 +98,14 @@ export function AuthForm() {
 
   return (
     <View style={styles.card}>
+      {sessionExpired ? (
+        <Pressable onPress={clearSessionExpired} style={styles.sessionBanner}>
+          <Text style={styles.sessionBannerText}>
+            {t('auth.session.expired', 'Twoja sesja wygasla. Zaloguj sie ponownie.')}
+          </Text>
+        </Pressable>
+      ) : null}
+
       <View style={styles.tabs}>
         <Pressable
           onPress={() => setMode('login')}
@@ -236,6 +244,18 @@ const styles = StyleSheet.create({
     gap: 14,
     borderWidth: 1,
     borderColor: '#334155',
+  },
+  sessionBanner: {
+    backgroundColor: '#422006',
+    borderRadius: 10,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#f59e0b',
+  },
+  sessionBannerText: {
+    color: '#fde68a',
+    fontSize: 13,
+    lineHeight: 18,
   },
   tabs: {
     flexDirection: 'row',

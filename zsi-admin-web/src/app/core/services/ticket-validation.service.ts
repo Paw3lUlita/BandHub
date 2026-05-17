@@ -5,6 +5,8 @@ import { Observable } from 'rxjs';
 export interface TicketValidation {
   id: string;
   ticketCodeId: string;
+  ticketCode?: string;
+  username?: string | null;
   validatedBy: string | null;
   gateName: string | null;
   validationResult: string;

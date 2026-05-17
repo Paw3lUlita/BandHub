@@ -6,6 +6,7 @@ import com.bandhub.zsi.ecommerce.dto.CreateOrderStatusHistoryRequest;
 import com.bandhub.zsi.ecommerce.dto.OrderStatusHistoryResponse;
 import com.bandhub.zsi.ecommerce.dto.UpdateOrderStatusHistoryRequest;
 import com.bandhub.zsi.shared.api.PageResponse;
+import com.bandhub.zsi.user.UserLookupService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,10 +20,16 @@ public class OrderStatusHistoryAdminService {
 
     private final OrderStatusHistoryRepository orderStatusHistoryRepository;
     private final OrderRepository orderRepository;
+    private final UserLookupService userLookupService;
 
-    public OrderStatusHistoryAdminService(OrderStatusHistoryRepository orderStatusHistoryRepository, OrderRepository orderRepository) {
+    public OrderStatusHistoryAdminService(
+            OrderStatusHistoryRepository orderStatusHistoryRepository,
+            OrderRepository orderRepository,
+            UserLookupService userLookupService
+    ) {
         this.orderStatusHistoryRepository = orderStatusHistoryRepository;
         this.orderRepository = orderRepository;
+        this.userLookupService = userLookupService;
     }
 
     public UUID create(CreateOrderStatusHistoryRequest request) {
@@ -82,12 +89,14 @@ public class OrderStatusHistoryAdminService {
     }
 
     private OrderStatusHistoryResponse toResponse(OrderStatusHistory history) {
+        String changedBy = history.getChangedBy();
         return new OrderStatusHistoryResponse(
                 history.getId(),
                 history.getOrder().getId(),
                 history.getOldStatus(),
                 history.getNewStatus(),
-                history.getChangedBy(),
+                changedBy,
+                changedBy != null ? userLookupService.usernameOrId(changedBy) : null,
                 history.getChangedAt(),
                 history.getNote()
         );

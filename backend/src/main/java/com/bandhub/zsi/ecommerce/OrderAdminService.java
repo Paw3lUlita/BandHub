@@ -7,6 +7,7 @@ import com.bandhub.zsi.ecommerce.dto.OrderDetailsResponse;
 import com.bandhub.zsi.ecommerce.dto.OrderItemDto;
 import com.bandhub.zsi.ecommerce.dto.OrderSummaryResponse;
 import com.bandhub.zsi.shared.api.PageResponse;
+import com.bandhub.zsi.user.UserLookupService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -34,19 +35,22 @@ public class OrderAdminService {
     private final ProductRepository productRepository;
     private final PaymentRepository paymentRepository;
     private final ShipmentRepository shipmentRepository;
+    private final UserLookupService userLookupService;
 
     public OrderAdminService(
             OrderRepository orderRepository,
             OrderStatusHistoryRepository orderStatusHistoryRepository,
             ProductRepository productRepository,
             PaymentRepository paymentRepository,
-            ShipmentRepository shipmentRepository
+            ShipmentRepository shipmentRepository,
+            UserLookupService userLookupService
     ) {
         this.orderRepository = orderRepository;
         this.orderStatusHistoryRepository = orderStatusHistoryRepository;
         this.productRepository = productRepository;
         this.paymentRepository = paymentRepository;
         this.shipmentRepository = shipmentRepository;
+        this.userLookupService = userLookupService;
     }
 
     @Transactional(readOnly = true)
@@ -54,6 +58,13 @@ public class OrderAdminService {
         return orderRepository.findAllByOrderByCreatedAtDesc()
                 .stream()
                 .map(this::toSummary)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<OrderDetailsResponse> getOrdersForUser(String userId) {
+        return orderRepository.findByUserIdOrderByCreatedAtDesc(userId).stream()
+                .map(order -> getOrderDetails(order.getId()))
                 .toList();
     }
 
@@ -120,7 +131,8 @@ public class OrderAdminService {
                 order.getStatus(),
                 amount,
                 currency,
-                order.getUserId()
+                order.getUserId(),
+                userLookupService.usernameOrId(order.getUserId())
         );
     }
 
@@ -190,12 +202,14 @@ public class OrderAdminService {
     }
 
     private com.bandhub.zsi.ecommerce.dto.OrderStatusHistoryResponse toStatusHistoryResponse(OrderStatusHistory h) {
+        String changedBy = h.getChangedBy();
         return new com.bandhub.zsi.ecommerce.dto.OrderStatusHistoryResponse(
                 h.getId(),
                 h.getOrder().getId(),
                 h.getOldStatus(),
                 h.getNewStatus(),
-                h.getChangedBy(),
+                changedBy,
+                changedBy != null ? userLookupService.usernameOrId(changedBy) : null,
                 h.getChangedAt(),
                 h.getNote()
         );

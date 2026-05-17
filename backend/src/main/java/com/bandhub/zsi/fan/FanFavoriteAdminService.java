@@ -5,6 +5,7 @@ import com.bandhub.zsi.fan.dto.CreateFanFavoriteRequest;
 import com.bandhub.zsi.fan.dto.FanFavoriteResponse;
 import com.bandhub.zsi.fan.dto.UpdateFanFavoriteRequest;
 import com.bandhub.zsi.shared.api.PageResponse;
+import com.bandhub.zsi.user.UserLookupService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,9 +18,11 @@ import java.util.UUID;
 public class FanFavoriteAdminService {
 
     private final FanFavoriteRepository fanFavoriteRepository;
+    private final UserLookupService userLookupService;
 
-    public FanFavoriteAdminService(FanFavoriteRepository fanFavoriteRepository) {
+    public FanFavoriteAdminService(FanFavoriteRepository fanFavoriteRepository, UserLookupService userLookupService) {
         this.fanFavoriteRepository = fanFavoriteRepository;
+        this.userLookupService = userLookupService;
     }
 
     public UUID create(CreateFanFavoriteRequest request) {
@@ -65,6 +68,7 @@ public class FanFavoriteAdminService {
         return new FanFavoriteResponse(
                 favorite.getId(),
                 favorite.getFanId(),
+                userLookupService.usernameOrId(favorite.getFanId()),
                 favorite.getFavoriteType(),
                 favorite.getReferenceId(),
                 favorite.getCreatedAt()

@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.data.domain.Persistable;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -13,7 +14,10 @@ import java.util.UUID;
 @Table(name = "ticket_orders")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class TicketOrder {
+public class TicketOrder implements Persistable<UUID> {
+
+    @Transient
+    private boolean newEntity = true;
 
     @Id
     private UUID id;
@@ -37,6 +41,17 @@ public class TicketOrder {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
+    @Override
+    public boolean isNew() {
+        return newEntity;
+    }
+
+    @PostPersist
+    @PostLoad
+    private void markNotNew() {
+        this.newEntity = false;
+    }
+
     public static TicketOrder create(UUID id, String userId, Concert concert, String status, Money totalAmount) {
         TicketOrder order = new TicketOrder();
         order.id = id;
@@ -45,6 +60,7 @@ public class TicketOrder {
         order.status = status;
         order.totalAmount = totalAmount;
         order.createdAt = LocalDateTime.now();
+        order.newEntity = true;
         return order;
     }
 

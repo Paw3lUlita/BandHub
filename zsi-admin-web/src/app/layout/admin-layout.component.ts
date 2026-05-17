@@ -115,18 +115,6 @@ import { OidcSecurityService } from 'angular-auth-oidc-client';
           <li>
             <a routerLink="/admin/setlist-items" routerLinkActive="active">Pozycje setlist</a>
           </li>
-          <li>
-            <a routerLink="/admin/fan-favorites" routerLinkActive="active">Ulubione fanów</a>
-          </li>
-          <li>
-            <a routerLink="/admin/fan-notifications" routerLinkActive="active">Powiadomienia</a>
-          </li>
-          <li>
-            <a routerLink="/admin/fan-notification-reads" routerLinkActive="active">Odczytane powiadomienia</a>
-          </li>
-          <li>
-            <a routerLink="/admin/fan-devices" routerLinkActive="active">Urządzenia fanów</a>
-          </li>
 
           @if (isAdmin()) {
             <li class="menu-title mt-4">IAM</li>

@@ -2,6 +2,7 @@ package com.bandhub.zsi.ticketing;
 
 import com.bandhub.zsi.shared.Money;
 import com.bandhub.zsi.ticketing.domain.*;
+import com.bandhub.zsi.ticketing.dto.MyTicketOrderResponse;
 import com.bandhub.zsi.ticketing.dto.PlaceTicketOrderCommand;
 import com.bandhub.zsi.ticketing.dto.TicketPurchaseResponse;
 import jakarta.persistence.EntityNotFoundException;
@@ -68,8 +69,8 @@ public class TicketOrderPublicService {
 
         Money totalMoney = new Money(total, currency != null ? currency : "PLN");
         UUID orderId = UUID.randomUUID();
-        TicketOrder order = TicketOrder.create(orderId, userId, concert, ORDER_STATUS_PAID, totalMoney);
-        ticketOrderRepository.save(order);
+        TicketOrder order = ticketOrderRepository.save(
+                TicketOrder.create(orderId, userId, concert, ORDER_STATUS_PAID, totalMoney));
 
         List<String> issuedCodes = new ArrayList<>();
         for (int i = 0; i < reservedPools.size(); i++) {
@@ -79,16 +80,37 @@ public class TicketOrderPublicService {
             ticketOrderItemRepository.save(item);
             for (int n = 0; n < qty; n++) {
                 String code = generateUniqueCode();
-                UUID ticketId = UUID.randomUUID();
-                Ticket ticket = Ticket.issue(ticketId, code, pool, userId, order);
-                ticketRepository.save(ticket);
-                TicketCode ticketCode = TicketCode.create(ticketId, code, "QR", "ACTIVE");
-                ticketCodeRepository.save(ticketCode);
+                Ticket ticket = ticketRepository.save(Ticket.issue(code, pool, userId, order));
+                ticketCodeRepository.save(TicketCode.create(ticket.getId(), code, "QR", "ACTIVE"));
                 issuedCodes.add(code);
             }
         }
 
-        return new TicketPurchaseResponse(orderId, issuedCodes);
+        return new TicketPurchaseResponse(order.getId(), issuedCodes);
+    }
+
+    @Transactional(readOnly = true)
+    public List<MyTicketOrderResponse> getOrdersForUser(String userId) {
+        return ticketOrderRepository.findByUserIdOrderByCreatedAtDesc(userId).stream()
+                .map(this::toMyOrderResponse)
+                .toList();
+    }
+
+    private MyTicketOrderResponse toMyOrderResponse(TicketOrder order) {
+        List<String> codes = ticketRepository.findByTicketOrderId(order.getId()).stream()
+                .map(Ticket::getTicketCode)
+                .toList();
+        return new MyTicketOrderResponse(
+                order.getId(),
+                order.getConcert().getId(),
+                order.getConcert().getName(),
+                order.getConcert().getDate(),
+                order.getStatus(),
+                order.getTotalAmount().amount(),
+                order.getTotalAmount().currency(),
+                order.getCreatedAt(),
+                codes
+        );
     }
 
     private String generateUniqueCode() {

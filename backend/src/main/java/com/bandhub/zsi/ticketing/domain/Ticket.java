@@ -19,6 +19,7 @@ import java.util.UUID;
 public class Ticket {
 
     @Id
+    @GeneratedValue
     private UUID id;
 
     @Column(name = "ticket_code", nullable = false, unique = true)
@@ -38,9 +39,8 @@ public class Ticket {
     @JoinColumn(name = "ticket_order_id")
     private TicketOrder ticketOrder;
 
-    public static Ticket issue(UUID id, String ticketCode, TicketPool pool, String userId, TicketOrder order) {
+    public static Ticket issue(String ticketCode, TicketPool pool, String userId, TicketOrder order) {
         Ticket ticket = new Ticket();
-        ticket.id = id;
         ticket.ticketCode = ticketCode;
         ticket.ticketPool = pool;
         ticket.userId = userId;

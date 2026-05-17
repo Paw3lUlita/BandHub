@@ -17,6 +17,7 @@ export interface NewsArticle {
   imageUrl?: string;
   publishedDate: string;
   authorId: string;
+  authorUsername?: string;
 }
 
 export interface PageResponse<T> {

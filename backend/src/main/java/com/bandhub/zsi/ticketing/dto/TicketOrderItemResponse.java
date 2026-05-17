@@ -7,6 +7,8 @@ public record TicketOrderItemResponse(
         UUID id,
         UUID ticketOrderId,
         UUID ticketPoolId,
+        String ticketPoolName,
+        String concertName,
         int quantity,
         BigDecimal unitPrice,
         String currency

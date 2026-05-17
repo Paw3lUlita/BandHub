@@ -5,6 +5,7 @@ import com.bandhub.zsi.fan.dto.CreateFanDeviceRequest;
 import com.bandhub.zsi.fan.dto.FanDeviceResponse;
 import com.bandhub.zsi.fan.dto.UpdateFanDeviceRequest;
 import com.bandhub.zsi.shared.api.PageResponse;
+import com.bandhub.zsi.user.UserLookupService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,9 +18,11 @@ import java.util.UUID;
 public class FanDeviceAdminService {
 
     private final FanDeviceRepository fanDeviceRepository;
+    private final UserLookupService userLookupService;
 
-    public FanDeviceAdminService(FanDeviceRepository fanDeviceRepository) {
+    public FanDeviceAdminService(FanDeviceRepository fanDeviceRepository, UserLookupService userLookupService) {
         this.fanDeviceRepository = fanDeviceRepository;
+        this.userLookupService = userLookupService;
     }
 
     public UUID create(CreateFanDeviceRequest request) {
@@ -65,6 +68,7 @@ public class FanDeviceAdminService {
         return new FanDeviceResponse(
                 device.getId(),
                 device.getFanId(),
+                userLookupService.usernameOrId(device.getFanId()),
                 device.getDeviceToken(),
                 device.getPlatform(),
                 device.getAppVersion(),

@@ -102,6 +102,39 @@ export type CartItem = {
   price: number;
   currency: string;
   quantity: number;
+  stockQuantity?: number;
+};
+
+export type OrderItemDto = {
+  productId: string;
+  productName: string;
+  quantity: number;
+  unitPrice: number;
+  lineTotal: number;
+};
+
+export type OrderStatus = 'NEW' | 'PAID' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
+
+export type MyOrderResponse = {
+  id: string;
+  createdAt: string;
+  status: OrderStatus;
+  totalAmount: number;
+  currency: string;
+  userId: string;
+  items: OrderItemDto[];
+};
+
+export type MyTicketOrderResponse = {
+  orderId: string;
+  concertId: string;
+  concertName: string;
+  concertDate: string;
+  status: string;
+  totalAmount: number;
+  currency: string;
+  createdAt: string;
+  ticketCodes: string[];
 };
 
 export type LocalMerchOrder = {

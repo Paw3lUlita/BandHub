@@ -34,6 +34,11 @@ class SqlTicketOrderRepository implements TicketOrderRepository {
     public List<TicketOrder> findAll() { return jpaRepository.findAll(); }
 
     @Override
+    public List<TicketOrder> findByUserIdOrderByCreatedAtDesc(String userId) {
+        return jpaRepository.findByUserIdOrderByCreatedAtDesc(userId);
+    }
+
+    @Override
     public PagedResult<TicketOrder> findPage(int page, int size, String sortBy, String sortDir, String q, UUID concertId) {
         String pattern = (q == null || q.isBlank()) ? "%" : "%" + q.trim().toLowerCase() + "%";
         Sort.Direction dir = "desc".equalsIgnoreCase(sortDir) ? Sort.Direction.DESC : Sort.Direction.ASC;
@@ -52,6 +57,8 @@ class SqlTicketOrderRepository implements TicketOrderRepository {
 }
 
 interface JpaTicketOrderRepository extends JpaRepository<TicketOrder, UUID> {
+
+    List<TicketOrder> findByUserIdOrderByCreatedAtDesc(String userId);
 
     @Query("""
             SELECT t FROM TicketOrder t

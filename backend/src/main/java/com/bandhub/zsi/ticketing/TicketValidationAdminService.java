@@ -6,6 +6,7 @@ import com.bandhub.zsi.ticketing.domain.TicketValidation;
 import com.bandhub.zsi.ticketing.dto.CreateTicketValidationRequest;
 import com.bandhub.zsi.ticketing.dto.TicketValidationResponse;
 import com.bandhub.zsi.ticketing.dto.UpdateTicketValidationRequest;
+import com.bandhub.zsi.user.UserLookupService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,10 +20,19 @@ public class TicketValidationAdminService {
 
     private final TicketValidationRepository ticketValidationRepository;
     private final TicketCodeRepository ticketCodeRepository;
+    private final TicketRepository ticketRepository;
+    private final UserLookupService userLookupService;
 
-    public TicketValidationAdminService(TicketValidationRepository ticketValidationRepository, TicketCodeRepository ticketCodeRepository) {
+    public TicketValidationAdminService(
+            TicketValidationRepository ticketValidationRepository,
+            TicketCodeRepository ticketCodeRepository,
+            TicketRepository ticketRepository,
+            UserLookupService userLookupService
+    ) {
         this.ticketValidationRepository = ticketValidationRepository;
         this.ticketCodeRepository = ticketCodeRepository;
+        this.ticketRepository = ticketRepository;
+        this.userLookupService = userLookupService;
     }
 
     public UUID create(CreateTicketValidationRequest request) {
@@ -69,9 +79,18 @@ public class TicketValidationAdminService {
     }
 
     private TicketValidationResponse toResponse(TicketValidation validation) {
+        var code = validation.getTicketCode();
+        String username = null;
+        if (code.getTicketId() != null) {
+            username = ticketRepository.findById(code.getTicketId())
+                    .map(t -> userLookupService.usernameOrId(t.getUserId()))
+                    .orElse(null);
+        }
         return new TicketValidationResponse(
                 validation.getId(),
-                validation.getTicketCode().getId(),
+                code.getId(),
+                code.getCodeValue(),
+                username,
                 validation.getValidatedBy(),
                 validation.getGateName(),
                 validation.getValidationResult(),

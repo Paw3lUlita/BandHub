@@ -64,7 +64,7 @@ type OrderListParams = ListPageParams & { status?: OrderStatus };
         </td>
 
         <td>
-          <span class="badge badge-ghost badge-sm">{{ order.userId }}</span>
+          <span class="badge badge-ghost badge-sm">{{ order.username || order.userId }}</span>
         </td>
 
         <td class="font-mono font-bold">

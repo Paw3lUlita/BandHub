@@ -43,7 +43,12 @@ const SORT_OPTIONS: SortOption[] = [
         <tbody>
           @for (item of (pageData$ | async)?.content ?? []; track item.id) {
             <tr class="hover">
-              <td class="text-xs font-mono">{{ item.ticketCodeId }}</td>
+              <td>
+                <div class="font-mono">{{ item.ticketCode || item.ticketCodeId }}</div>
+                @if (item.username) {
+                  <div class="text-xs opacity-60">{{ item.username }}</div>
+                }
+              </td>
               <td><span class="badge badge-ghost badge-sm">{{ item.validationResult }}</span></td>
               <td>{{ item.gateName || '-' }}</td>
               <td class="text-sm">{{ item.validationTime | date:'short' }}</td>

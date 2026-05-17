@@ -6,6 +6,7 @@ import com.bandhub.zsi.fan.dto.CreateFanNotificationReadRequest;
 import com.bandhub.zsi.fan.dto.FanNotificationReadResponse;
 import com.bandhub.zsi.fan.dto.UpdateFanNotificationReadRequest;
 import com.bandhub.zsi.shared.api.PageResponse;
+import com.bandhub.zsi.user.UserLookupService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,10 +20,16 @@ public class FanNotificationReadAdminService {
 
     private final FanNotificationReadRepository fanNotificationReadRepository;
     private final FanNotificationRepository fanNotificationRepository;
+    private final UserLookupService userLookupService;
 
-    public FanNotificationReadAdminService(FanNotificationReadRepository fanNotificationReadRepository, FanNotificationRepository fanNotificationRepository) {
+    public FanNotificationReadAdminService(
+            FanNotificationReadRepository fanNotificationReadRepository,
+            FanNotificationRepository fanNotificationRepository,
+            UserLookupService userLookupService
+    ) {
         this.fanNotificationReadRepository = fanNotificationReadRepository;
         this.fanNotificationRepository = fanNotificationRepository;
+        this.userLookupService = userLookupService;
     }
 
     public UUID create(CreateFanNotificationReadRequest request) {
@@ -68,10 +75,13 @@ public class FanNotificationReadAdminService {
     }
 
     private FanNotificationReadResponse toResponse(FanNotificationRead read) {
+        var notification = read.getNotification();
         return new FanNotificationReadResponse(
                 read.getId(),
-                read.getNotification().getId(),
+                notification.getId(),
+                notification.getTitle(),
                 read.getFanId(),
+                userLookupService.usernameOrId(read.getFanId()),
                 read.getReadAt()
         );
     }

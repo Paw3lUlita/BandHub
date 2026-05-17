@@ -1,8 +1,8 @@
 import { Link } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
-import { fetchGallery, fetchNewsPage, fetchSetlistsPage } from '@/lib/api';
-import { GalleryImage, News, Setlist } from '@/types/api';
+import { fetchNewsPage } from '@/lib/api';
+import { News } from '@/types/api';
 import { absoluteApiUrl } from '@/lib/config';
 import { Screen } from '@/components/ui/Screen';
 import { useBranding } from '@/providers/BrandingProvider';
@@ -14,18 +14,14 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [news, setNews] = useState<News[]>([]);
-  const [gallery, setGallery] = useState<GalleryImage[]>([]);
-  const [setlists, setSetlists] = useState<Setlist[]>([]);
 
   useEffect(() => {
-    Promise.all([fetchNewsPage(), fetchGallery(), fetchSetlistsPage()])
-      .then(([newsPage, galleryData, setlistPage]) => {
+    fetchNewsPage()
+      .then((newsPage) => {
         setNews(newsPage.content.slice(0, 5));
-        setGallery(galleryData.slice(0, 8));
-        setSetlists(setlistPage.content.slice(0, 5));
       })
       .catch((err) => {
-        setError(err instanceof Error ? err.message : 'Błąd pobierania danych');
+        setError(err instanceof Error ? err.message : 'Blad pobierania danych');
       })
       .finally(() => setLoading(false));
   }, []);
@@ -75,32 +71,6 @@ export default function HomeScreen() {
           </Pressable>
         </Link>
       ))}
-
-      <Text style={styles.section}>{t('home.section.setlists', 'Setlisty')}</Text>
-      {setlists.length === 0 ? (
-        <Text style={styles.empty}>{t('home.empty.setlists', 'Brak setlist.')}</Text>
-      ) : null}
-      {setlists.map((item) => (
-        <Link key={item.id} href={{ pathname: '/setlists/[id]', params: { id: item.id } }} asChild>
-          <Pressable style={styles.card}>
-            <Text style={styles.cardTitle}>{item.title}</Text>
-            <Text style={styles.cardText}>
-              {item.concertName}
-              {item.publishedAt ? ` - ${new Date(item.publishedAt).toLocaleDateString()}` : ''}
-            </Text>
-          </Pressable>
-        </Link>
-      ))}
-
-      <Text style={styles.section}>{t('home.section.gallery', 'Galeria')}</Text>
-      {gallery.length === 0 ? (
-        <Text style={styles.empty}>{t('home.empty.gallery', 'Brak zdjec.')}</Text>
-      ) : null}
-      <View style={styles.galleryRow}>
-        {gallery.map((image) => (
-          <Image key={image.id} source={{ uri: absoluteApiUrl(image.imageUrl) }} style={styles.thumb} />
-        ))}
-      </View>
     </Screen>
   );
 }
@@ -162,17 +132,6 @@ const styles = StyleSheet.create({
   empty: {
     color: '#64748b',
     fontStyle: 'italic',
-  },
-  galleryRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  thumb: {
-    width: 100,
-    height: 100,
-    borderRadius: 8,
-    backgroundColor: '#334155',
   },
   error: {
     color: '#fda4af',

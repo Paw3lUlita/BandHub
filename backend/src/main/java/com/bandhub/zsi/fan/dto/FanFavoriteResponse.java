@@ -6,6 +6,7 @@ import java.util.UUID;
 public record FanFavoriteResponse(
         UUID id,
         String fanId,
+        String fanUsername,
         String favoriteType,
         UUID referenceId,
         LocalDateTime createdAt

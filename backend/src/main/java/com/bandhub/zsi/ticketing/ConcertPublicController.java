@@ -1,5 +1,7 @@
 package com.bandhub.zsi.ticketing;
 
+import com.bandhub.zsi.fan.SetlistAdminService;
+import com.bandhub.zsi.fan.dto.SetlistResponse;
 import com.bandhub.zsi.ticketing.dto.ConcertDetailResponse;
 import com.bandhub.zsi.ticketing.dto.ConcertResponse;
 import com.bandhub.zsi.shared.api.PageResponse;
@@ -14,9 +16,11 @@ import java.util.UUID;
 class ConcertPublicController {
 
     private final ConcertPublicService service;
+    private final SetlistAdminService setlistAdminService;
 
-    ConcertPublicController(ConcertPublicService service) {
+    ConcertPublicController(ConcertPublicService service, SetlistAdminService setlistAdminService) {
         this.service = service;
+        this.setlistAdminService = setlistAdminService;
     }
 
     @GetMapping
@@ -38,5 +42,10 @@ class ConcertPublicController {
     @GetMapping("/{id}")
     ResponseEntity<ConcertDetailResponse> getOne(@PathVariable UUID id) {
         return ResponseEntity.ok(service.getConcert(id));
+    }
+
+    @GetMapping("/{id}/setlists")
+    ResponseEntity<List<SetlistResponse>> getSetlists(@PathVariable UUID id) {
+        return ResponseEntity.ok(setlistAdminService.getPublishedByConcertId(id));
     }
 }

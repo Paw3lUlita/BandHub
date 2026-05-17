@@ -6,6 +6,7 @@ import java.util.UUID;
 public record FanNotificationResponse(
         UUID id,
         String fanId,
+        String fanUsername,
         boolean broadcast,
         String title,
         String message,

@@ -44,7 +44,7 @@ const SORT_OPTIONS: SortOption[] = [
             <tr class="hover">
               <td class="text-xs font-mono">{{ item.orderId }}</td>
               <td><span class="badge badge-ghost badge-sm">{{ item.oldStatus || '-' }}</span> → <span class="badge badge-primary badge-sm">{{ item.newStatus }}</span></td>
-              <td>{{ item.changedBy || '-' }}</td>
+              <td>{{ item.changedByUsername || item.changedBy || '-' }}</td>
               <td class="text-sm">{{ item.changedAt | date:'short' }}</td>
               <td class="flex gap-2">
                 <a [routerLink]="['/admin/order-status-history', item.id]" class="btn btn-ghost btn-xs">Edytuj</a>

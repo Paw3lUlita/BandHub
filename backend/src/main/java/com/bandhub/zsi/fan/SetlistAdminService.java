@@ -60,6 +60,22 @@ public class SetlistAdminService {
     }
 
     @Transactional(readOnly = true)
+    public List<SetlistResponse> getByConcertId(UUID concertId) {
+        return setlistRepository.findByConcertIdOrderByCreatedAtDesc(concertId).stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    /** Tylko opublikowane setlisty widoczne dla fana w aplikacji mobilnej. */
+    @Transactional(readOnly = true)
+    public List<SetlistResponse> getPublishedByConcertId(UUID concertId) {
+        return setlistRepository.findByConcertIdOrderByCreatedAtDesc(concertId).stream()
+                .filter(setlist -> setlist.getPublishedAt() != null)
+                .map(this::toResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
     public PageResponse<SetlistResponse> getPage(int page, int size, String sortBy, String sortDir, String query) {
         var result = setlistRepository.findPage(page, size, sortBy, sortDir, query);
         List<SetlistResponse> content = result.content().stream().map(this::toResponse).toList();

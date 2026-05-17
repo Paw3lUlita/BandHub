@@ -11,6 +11,9 @@ public interface SetlistRepository {
     Setlist save(Setlist setlist);
     Optional<Setlist> findById(UUID id);
     List<Setlist> findAll();
+
+    List<Setlist> findByConcertIdOrderByCreatedAtDesc(UUID concertId);
+
     PagedResult<Setlist> findPage(int page, int size, String sortBy, String sortDir, String q);
     void deleteById(UUID id);
 }

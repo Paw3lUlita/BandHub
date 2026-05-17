@@ -42,7 +42,12 @@ const SORT_OPTIONS: SortOption[] = [
         <tbody>
           @for (item of (pageData$ | async)?.content ?? []; track item.id) {
             <tr class="hover">
-              <td class="text-xs font-mono">{{ item.setlistId }}</td>
+              <td>
+                <div class="font-bold">{{ item.setlistTitle || item.setlistId }}</div>
+                @if (item.concertName) {
+                  <div class="text-xs opacity-60">{{ item.concertName }}</div>
+                }
+              </td>
               <td class="font-bold">{{ item.songTitle }}</td>
               <td>{{ item.songOrder }}</td>
               <td>{{ item.durationSeconds ?? '-' }}</td>

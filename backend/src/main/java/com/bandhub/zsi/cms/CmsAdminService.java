@@ -5,6 +5,7 @@ import com.bandhub.zsi.cms.dto.CreateNewsRequest;
 import com.bandhub.zsi.cms.dto.NewsResponse;
 import com.bandhub.zsi.cms.dto.UpdateNewsCommand;
 import com.bandhub.zsi.shared.api.PageResponse;
+import com.bandhub.zsi.user.UserLookupService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,9 +19,23 @@ import java.util.UUID;
 public class CmsAdminService {
 
     private final NewsRepository newsRepository;
+    private final UserLookupService userLookupService;
 
-    public CmsAdminService(NewsRepository newsRepository) {
+    public CmsAdminService(NewsRepository newsRepository, UserLookupService userLookupService) {
         this.newsRepository = newsRepository;
+        this.userLookupService = userLookupService;
+    }
+
+    private NewsResponse toNewsResponse(NewsArticle n) {
+        return new NewsResponse(
+                n.getId(),
+                n.getTitle(),
+                n.getContent(),
+                n.getImageUrl(),
+                n.getPublishedDate(),
+                n.getAuthorId(),
+                userLookupService.usernameOrId(n.getAuthorId())
+        );
     }
 
     public UUID publishNews(CreateNewsRequest request, String authorId) {
@@ -48,28 +63,14 @@ public class CmsAdminService {
     @Transactional(readOnly = true)
     public List<NewsResponse> getAllNews() {
         return newsRepository.findAllByOrderByPublishedDateDesc().stream()
-                .map(n -> new NewsResponse(
-                        n.getId(),
-                        n.getTitle(),
-                        n.getContent(),
-                        n.getImageUrl(),
-                        n.getPublishedDate(),
-                        n.getAuthorId()
-                ))
+                .map(this::toNewsResponse)
                 .toList();
     }
 
     @Transactional(readOnly = true)
     public NewsResponse getNews(UUID id) {
         return newsRepository.findById(id)
-                .map(n -> new NewsResponse(
-                        n.getId(),
-                        n.getTitle(),
-                        n.getContent(),
-                        n.getImageUrl(),
-                        n.getPublishedDate(),
-                        n.getAuthorId()
-                ))
+                .map(this::toNewsResponse)
                 .orElseThrow(() -> new EntityNotFoundException("News not found"));
     }
 
@@ -79,14 +80,7 @@ public class CmsAdminService {
         boolean descending = "desc".equalsIgnoreCase(sortDir);
 
         List<NewsResponse> filtered = newsRepository.findAllByOrderByPublishedDateDesc().stream()
-                .map(n -> new NewsResponse(
-                        n.getId(),
-                        n.getTitle(),
-                        n.getContent(),
-                        n.getImageUrl(),
-                        n.getPublishedDate(),
-                        n.getAuthorId()
-                ))
+                .map(this::toNewsResponse)
                 .filter(news -> normalizedQuery.isBlank()
                         || news.title().toLowerCase().contains(normalizedQuery)
                         || news.content().toLowerCase().contains(normalizedQuery))

@@ -8,6 +8,8 @@ export interface TicketCode {
   codeValue: string;
   codeType: string;
   status: string;
+  username?: string;
+  poolName?: string;
   generatedAt: string | null;
   activatedAt: string | null;
   usedAt: string | null;

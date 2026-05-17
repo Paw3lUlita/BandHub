@@ -9,6 +9,8 @@ public record TicketCodeResponse(
         String codeValue,
         String codeType,
         String status,
+        String username,
+        String poolName,
         LocalDateTime generatedAt,
         LocalDateTime activatedAt,
         LocalDateTime usedAt

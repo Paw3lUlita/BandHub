@@ -1,6 +1,7 @@
 import { inject, Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpResponse } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { SetlistItem } from './setlist-item.service';
 
 export interface Setlist {
   id: string;
@@ -30,6 +31,11 @@ export interface CreateSetlistRequest {
   publishedAt: string | null;
 }
 
+export interface UpdateSetlistRequest {
+  title: string;
+  publishedAt: string | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class SetlistService {
   private http = inject(HttpClient);
@@ -54,11 +60,15 @@ export class SetlistService {
     return this.http.get<Setlist>(`${this.apiUrl}/${id}`);
   }
 
-  create(req: CreateSetlistRequest): Observable<void> {
-    return this.http.post<void>(this.apiUrl, req);
+  create(req: CreateSetlistRequest): Observable<HttpResponse<void>> {
+    return this.http.post<void>(this.apiUrl, req, { observe: 'response' });
   }
 
-  update(id: string, req: CreateSetlistRequest): Observable<void> {
+  getItems(setlistId: string): Observable<SetlistItem[]> {
+    return this.http.get<SetlistItem[]>(`${this.apiUrl}/${setlistId}/items`);
+  }
+
+  update(id: string, req: UpdateSetlistRequest): Observable<void> {
     return this.http.put<void>(`${this.apiUrl}/${id}`, req);
   }
 

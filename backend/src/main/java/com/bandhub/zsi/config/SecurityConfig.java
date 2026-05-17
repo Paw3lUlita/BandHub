@@ -81,6 +81,8 @@ public class SecurityConfig {
         // Pozwól przesyłać ciasteczka/credentials (często wymagane):
         configuration.setAllowCredentials(true);
 
+        configuration.setExposedHeaders(List.of("Location"));
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;

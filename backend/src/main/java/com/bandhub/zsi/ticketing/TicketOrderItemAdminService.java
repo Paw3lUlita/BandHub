@@ -77,10 +77,14 @@ public class TicketOrderItemAdminService {
     }
 
     private TicketOrderItemResponse toResponse(TicketOrderItem item) {
+        var pool = item.getTicketPool();
+        var concert = pool.getConcert();
         return new TicketOrderItemResponse(
                 item.getId(),
                 item.getTicketOrder().getId(),
-                item.getTicketPool().getId(),
+                pool.getId(),
+                pool.getName(),
+                concert != null ? concert.getName() : null,
                 item.getQuantity(),
                 item.getUnitPrice().amount(),
                 item.getUnitPrice().currency()

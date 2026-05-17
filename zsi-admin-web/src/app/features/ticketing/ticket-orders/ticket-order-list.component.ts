@@ -60,8 +60,8 @@ const SORT_OPTIONS: SortOption[] = [
         <tbody>
           @for (item of (pageData$ | async)?.content ?? []; track item.id) {
             <tr class="hover">
-              <td class="text-xs">{{ item.userId }}</td>
-              <td class="text-xs font-mono">{{ item.concertId }}</td>
+              <td>{{ item.username || item.userId }}</td>
+              <td>{{ item.concertName || item.concertId }}</td>
               <td><span class="badge badge-ghost badge-sm">{{ item.status }}</span></td>
               <td class="font-mono">{{ item.totalAmount | currency:item.currency:'symbol':'1.2-2' }}</td>
               <td class="text-sm">{{ item.createdAt | date:'short' }}</td>

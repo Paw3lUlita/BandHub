@@ -8,6 +8,7 @@ export interface OrderStatusHistory {
   oldStatus: string | null;
   newStatus: string;
   changedBy: string | null;
+  changedByUsername?: string | null;
   changedAt: string;
   note: string | null;
 }

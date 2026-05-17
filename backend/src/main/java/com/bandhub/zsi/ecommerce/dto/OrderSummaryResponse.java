@@ -11,5 +11,6 @@ public record OrderSummaryResponse(
         OrderStatus status,
         BigDecimal totalAmount,
         String currency,
-        String userId // todo: zamienić z czasem na user email z keycloack
+        String userId,
+        String username
 ) {}

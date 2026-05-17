@@ -5,6 +5,7 @@ import com.bandhub.zsi.fan.dto.CreateFanNotificationRequest;
 import com.bandhub.zsi.fan.dto.FanNotificationResponse;
 import com.bandhub.zsi.fan.dto.UpdateFanNotificationRequest;
 import com.bandhub.zsi.shared.api.PageResponse;
+import com.bandhub.zsi.user.UserLookupService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,9 +18,11 @@ import java.util.UUID;
 public class FanNotificationAdminService {
 
     private final FanNotificationRepository fanNotificationRepository;
+    private final UserLookupService userLookupService;
 
-    public FanNotificationAdminService(FanNotificationRepository fanNotificationRepository) {
+    public FanNotificationAdminService(FanNotificationRepository fanNotificationRepository, UserLookupService userLookupService) {
         this.fanNotificationRepository = fanNotificationRepository;
+        this.userLookupService = userLookupService;
     }
 
     public UUID create(CreateFanNotificationRequest request) {
@@ -69,9 +72,13 @@ public class FanNotificationAdminService {
     }
 
     private FanNotificationResponse toResponse(FanNotification notification) {
+        String fanUsername = notification.isBroadcast() || notification.getFanId() == null
+                ? null
+                : userLookupService.usernameOrId(notification.getFanId());
         return new FanNotificationResponse(
                 notification.getId(),
                 notification.getFanId(),
+                fanUsername,
                 notification.isBroadcast(),
                 notification.getTitle(),
                 notification.getMessage(),

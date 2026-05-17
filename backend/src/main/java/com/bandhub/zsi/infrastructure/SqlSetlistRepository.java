@@ -40,6 +40,11 @@ class SqlSetlistRepository implements SetlistRepository {
     }
 
     @Override
+    public List<Setlist> findByConcertIdOrderByCreatedAtDesc(UUID concertId) {
+        return jpaRepository.findByConcert_IdOrderByCreatedAtDesc(concertId);
+    }
+
+    @Override
     public PagedResult<Setlist> findPage(int page, int size, String sortBy, String sortDir, String q) {
         String pattern = (q == null || q.isBlank()) ? "%" : "%" + q.trim().toLowerCase() + "%";
         Sort.Direction dir = "desc".equalsIgnoreCase(sortDir) ? Sort.Direction.DESC : Sort.Direction.ASC;
@@ -59,6 +64,8 @@ class SqlSetlistRepository implements SetlistRepository {
 }
 
 interface JpaSetlistRepository extends JpaRepository<Setlist, UUID> {
+
+    List<Setlist> findByConcert_IdOrderByCreatedAtDesc(UUID concertId);
 
     @Query("SELECT s FROM Setlist s WHERE LOWER(COALESCE(s.title, '')) LIKE LOWER(:pattern)")
     org.springframework.data.domain.Page<Setlist> findAllFiltered(@Param("pattern") String pattern, Pageable pageable);

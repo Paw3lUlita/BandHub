@@ -76,9 +76,12 @@ public class SetlistItemAdminService {
     }
 
     private SetlistItemResponse toResponse(SetlistItem item) {
+        var setlist = item.getSetlist();
         return new SetlistItemResponse(
                 item.getId(),
-                item.getSetlist().getId(),
+                setlist.getId(),
+                setlist.getTitle(),
+                setlist.getConcert().getName(),
                 item.getSongTitle(),
                 item.getSongOrder(),
                 item.getDurationSeconds()

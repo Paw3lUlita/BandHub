@@ -6,6 +6,7 @@ import java.util.UUID;
 public record FanDeviceResponse(
         UUID id,
         String fanId,
+        String fanUsername,
         String deviceToken,
         String platform,
         String appVersion,

@@ -4,7 +4,9 @@ import com.bandhub.zsi.shared.api.PageResponse;
 import com.bandhub.zsi.ticketing.domain.TicketCode;
 import com.bandhub.zsi.ticketing.dto.CreateTicketCodeRequest;
 import com.bandhub.zsi.ticketing.dto.TicketCodeResponse;
+import com.bandhub.zsi.ticketing.domain.Ticket;
 import com.bandhub.zsi.ticketing.dto.UpdateTicketCodeRequest;
+import com.bandhub.zsi.user.UserLookupService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,9 +19,17 @@ import java.util.UUID;
 public class TicketCodeAdminService {
 
     private final TicketCodeRepository ticketCodeRepository;
+    private final TicketRepository ticketRepository;
+    private final UserLookupService userLookupService;
 
-    public TicketCodeAdminService(TicketCodeRepository ticketCodeRepository) {
+    public TicketCodeAdminService(
+            TicketCodeRepository ticketCodeRepository,
+            TicketRepository ticketRepository,
+            UserLookupService userLookupService
+    ) {
         this.ticketCodeRepository = ticketCodeRepository;
+        this.ticketRepository = ticketRepository;
+        this.userLookupService = userLookupService;
     }
 
     public UUID create(CreateTicketCodeRequest request) {
@@ -73,12 +83,26 @@ public class TicketCodeAdminService {
     }
 
     private TicketCodeResponse toResponse(TicketCode code) {
+        String username = null;
+        String poolName = null;
+        if (code.getTicketId() != null) {
+            var ticketOpt = ticketRepository.findById(code.getTicketId());
+            if (ticketOpt.isPresent()) {
+                Ticket ticket = ticketOpt.get();
+                username = userLookupService.usernameOrId(ticket.getUserId());
+                if (ticket.getTicketPool() != null) {
+                    poolName = ticket.getTicketPool().getName();
+                }
+            }
+        }
         return new TicketCodeResponse(
                 code.getId(),
                 code.getTicketId(),
                 code.getCodeValue(),
                 code.getCodeType(),
                 code.getStatus(),
+                username,
+                poolName,
                 code.getGeneratedAt(),
                 code.getActivatedAt(),
                 code.getUsedAt()

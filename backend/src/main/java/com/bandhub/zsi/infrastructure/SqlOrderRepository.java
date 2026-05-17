@@ -30,6 +30,11 @@ class SqlOrderRepository implements OrderRepository {
     }
 
     @Override
+    public List<Order> findByUserIdOrderByCreatedAtDesc(String userId) {
+        return jpaRepository.findByUserIdOrderByCreatedAtDesc(userId);
+    }
+
+    @Override
     public Optional<Order> findById(UUID orderId) {
         return jpaRepository.findById(orderId);
     }
@@ -37,4 +42,6 @@ class SqlOrderRepository implements OrderRepository {
 
 interface JpaOrderRepository extends JpaRepository<Order, UUID> {
     List<Order> findAllByOrderByCreatedAtDesc();
+
+    List<Order> findByUserIdOrderByCreatedAtDesc(String userId);
 }

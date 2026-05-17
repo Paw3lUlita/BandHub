@@ -8,6 +8,8 @@ public record TicketRefundResponse(
         UUID id,
         UUID ticketOrderId,
         UUID ticketId,
+        String ticketCode,
+        String username,
         BigDecimal amount,
         String currency,
         String reason,

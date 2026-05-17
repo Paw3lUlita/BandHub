@@ -6,6 +6,8 @@ import java.util.UUID;
 public record FanNotificationReadResponse(
         UUID id,
         UUID notificationId,
+        String notificationTitle,
         String fanId,
+        String fanUsername,
         LocalDateTime readAt
 ) {}

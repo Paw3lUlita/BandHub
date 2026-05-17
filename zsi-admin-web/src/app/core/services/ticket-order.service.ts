@@ -5,7 +5,9 @@ import { Observable } from 'rxjs';
 export interface TicketOrder {
   id: string;
   userId: string;
+  username?: string;
   concertId: string;
+  concertName?: string;
   status: string;
   totalAmount: number;
   currency: string;

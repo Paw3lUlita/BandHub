@@ -9,6 +9,7 @@ public record OrderStatusHistoryResponse(
         String oldStatus,
         String newStatus,
         String changedBy,
+        String changedByUsername,
         LocalDateTime changedAt,
         String note
 ) {}

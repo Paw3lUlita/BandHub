@@ -1,7 +1,8 @@
 import {
   Concert,
   ConcertDetail,
-  GalleryImage,
+  MyOrderResponse,
+  MyTicketOrderResponse,
   News,
   PageResponse,
   Product,
@@ -28,16 +29,24 @@ export async function fetchNews(id: string): Promise<News> {
   return apiRequest<News>(`/api/public/news/${id}`);
 }
 
-export async function fetchGallery(): Promise<GalleryImage[]> {
-  return apiRequest<GalleryImage[]>('/api/public/gallery');
-}
-
 export async function fetchConcertsPage(): Promise<PageResponse<Concert>> {
   return apiRequest<PageResponse<Concert>>('/api/public/concerts/page?page=0&size=30&sortBy=date&sortDir=desc');
 }
 
 export async function fetchConcert(id: string): Promise<ConcertDetail> {
   return apiRequest<ConcertDetail>(`/api/public/concerts/${id}`);
+}
+
+export async function fetchConcertSetlists(concertId: string): Promise<Setlist[]> {
+  return apiRequest<Setlist[]>(`/api/public/concerts/${concertId}/setlists`);
+}
+
+export async function fetchMyOrders(token: string): Promise<MyOrderResponse[]> {
+  return apiRequest<MyOrderResponse[]>('/api/public/orders/me', { token });
+}
+
+export async function fetchMyTicketOrders(token: string): Promise<MyTicketOrderResponse[]> {
+  return apiRequest<MyTicketOrderResponse[]>('/api/public/ticket-orders/me', { token });
 }
 
 export async function purchaseTickets(

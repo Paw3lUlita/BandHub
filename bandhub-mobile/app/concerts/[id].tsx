@@ -1,31 +1,38 @@
+import { Link, useRouter } from 'expo-router';
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
-import { fetchConcert, purchaseTickets } from '@/lib/api';
-import { ConcertDetail, LocalTicketPurchase } from '@/types/api';
+import { fetchConcert, fetchConcertSetlists, purchaseTickets } from '@/lib/api';
+import { ConcertDetail, Setlist } from '@/types/api';
 import { Screen } from '@/components/ui/Screen';
 import { useAuth } from '@/providers/AuthProvider';
-import { saveTicketPurchase } from '@/lib/storage';
+import { useText } from '@/providers/DictionaryProvider';
+import { ApiError } from '@/lib/http';
 
 export default function ConcertDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { token } = useAuth();
+  const router = useRouter();
+  const { token, isAuthenticated } = useAuth();
+  const t = useText();
   const [loading, setLoading] = useState(true);
   const [detail, setDetail] = useState<ConcertDetail | null>(null);
+  const [setlists, setSetlists] = useState<Setlist[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [poolId, setPoolId] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [result, setResult] = useState<string | null>(null);
+  const [purchaseSuccess, setPurchaseSuccess] = useState(false);
 
   useEffect(() => {
     if (!id) {
       return;
     }
 
-    fetchConcert(id)
-      .then((response) => {
-        setDetail(response);
-        setPoolId(response.ticketPools[0]?.id ?? null);
+    Promise.all([fetchConcert(id), fetchConcertSetlists(id)])
+      .then(([concert, concertSetlists]) => {
+        setDetail(concert);
+        setSetlists(concertSetlists);
+        setPoolId(concert.ticketPools[0]?.id ?? null);
       })
       .catch((err) => setError(err instanceof Error ? err.message : 'Blad pobierania koncertu'))
       .finally(() => setLoading(false));
@@ -37,24 +44,23 @@ export default function ConcertDetailScreen() {
   );
 
   const handlePurchase = async () => {
-    if (!id || !detail || !poolId) {
+    if (!id || !detail || !poolId || !token) {
+      setResult('Zaloguj sie, aby kupic bilet.');
       return;
     }
 
+    setResult(null);
+    setPurchaseSuccess(false);
     try {
       const response = await purchaseTickets(id, { [poolId]: quantity }, token);
-      const purchase: LocalTicketPurchase = {
-        id: `${response.orderId}-${Date.now()}`,
-        orderId: response.orderId,
-        concertId: detail.id,
-        concertName: detail.name,
-        purchasedAt: new Date().toISOString(),
-        ticketCodes: response.ticketCodes,
-      };
-      await saveTicketPurchase(purchase);
+      setPurchaseSuccess(true);
       setResult(`Zakup zakonczony. Kody: ${response.ticketCodes.join(', ')}`);
     } catch (err) {
-      setResult(err instanceof Error ? err.message : 'Nie udalo sie kupic biletu');
+      if (err instanceof ApiError && err.status === 401) {
+        setResult(t('auth.session.expired', 'Twoja sesja wygasla. Zaloguj sie ponownie.'));
+      } else {
+        setResult(err instanceof Error ? err.message : 'Nie udalo sie kupic biletu');
+      }
     }
   };
 
@@ -83,6 +89,29 @@ export default function ConcertDetailScreen() {
       </Text>
       <Text style={styles.description}>{detail.description ?? 'Brak opisu koncertu.'}</Text>
 
+      <Text style={styles.section}>{t('concert.section.setlist', 'Setlista koncertu')}</Text>
+      {setlists.length === 0 ? (
+        <Text style={styles.emptySetlist}>
+          {t('concert.empty.setlist', 'Setlista jeszcze nie zostala opublikowana.')}
+        </Text>
+      ) : (
+        setlists.map((setlist) => (
+          <Link
+            key={setlist.id}
+            href={{ pathname: '/setlists/[id]', params: { id: setlist.id } }}
+            asChild>
+            <Pressable style={styles.setlistCard}>
+              <Text style={styles.setlistTitle}>{setlist.title}</Text>
+              {setlist.publishedAt ? (
+                <Text style={styles.setlistMeta}>
+                  {new Date(setlist.publishedAt).toLocaleDateString()}
+                </Text>
+              ) : null}
+            </Pressable>
+          </Link>
+        ))
+      )}
+
       <Text style={styles.section}>Wybierz pule</Text>
       {detail.ticketPools.map((pool) => (
         <Pressable
@@ -96,27 +125,43 @@ export default function ConcertDetailScreen() {
         </Pressable>
       ))}
 
-      <View style={styles.row}>
-        <Pressable onPress={() => setQuantity((v) => Math.max(1, v - 1))} style={styles.qtyButton}>
-          <Text style={styles.qtyText}>-</Text>
-        </Pressable>
-        <Text style={styles.qtyValue}>Ilosc: {quantity}</Text>
+      {isAuthenticated ? (
+        <>
+          <View style={styles.row}>
+            <Pressable onPress={() => setQuantity((v) => Math.max(1, v - 1))} style={styles.qtyButton}>
+              <Text style={styles.qtyText}>-</Text>
+            </Pressable>
+            <Text style={styles.qtyValue}>Ilosc: {quantity}</Text>
+            <Pressable
+              onPress={() =>
+                setQuantity((v) =>
+                  selectedPool ? Math.min(selectedPool.remainingQuantity || 1, v + 1) : v + 1,
+                )
+              }
+              style={styles.qtyButton}>
+              <Text style={styles.qtyText}>+</Text>
+            </Pressable>
+          </View>
+
+          <Pressable onPress={handlePurchase} style={styles.buyButton}>
+            <Text style={styles.buyText}>Kup bilet</Text>
+          </Pressable>
+        </>
+      ) : (
+        <Text style={styles.loginHint}>Zaloguj sie w zakladce Konto, aby kupic bilet.</Text>
+      )}
+
+      {result ? <Text style={purchaseSuccess ? styles.resultOk : styles.result}>{result}</Text> : null}
+
+      {purchaseSuccess ? (
         <Pressable
-          onPress={() =>
-            setQuantity((v) =>
-              selectedPool ? Math.min(selectedPool.remainingQuantity || 1, v + 1) : v + 1,
-            )
-          }
-          style={styles.qtyButton}>
-          <Text style={styles.qtyText}>+</Text>
+          onPress={() => router.push('/(tabs)/tickets')}
+          style={styles.viewTicketsButton}>
+          <Text style={styles.viewTicketsText}>
+            {t('concert.cta.viewMyTickets', 'Zobacz moje bilety')}
+          </Text>
         </Pressable>
-      </View>
-
-      <Pressable onPress={handlePurchase} style={styles.buyButton}>
-        <Text style={styles.buyText}>Kup bilet</Text>
-      </Pressable>
-
-      {result ? <Text style={styles.result}>{result}</Text> : null}
+      ) : null}
     </Screen>
   );
 }
@@ -143,7 +188,27 @@ const styles = StyleSheet.create({
     color: '#e2e8f0',
     fontSize: 18,
     fontWeight: '600',
-    marginTop: 8,
+    marginTop: 12,
+  },
+  emptySetlist: {
+    color: '#64748b',
+    fontStyle: 'italic',
+  },
+  setlistCard: {
+    backgroundColor: '#1e293b',
+    borderRadius: 10,
+    padding: 10,
+    gap: 2,
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  setlistTitle: {
+    color: '#f8fafc',
+    fontWeight: '600',
+  },
+  setlistMeta: {
+    color: '#94a3b8',
+    fontSize: 12,
   },
   poolCard: {
     backgroundColor: '#1e293b',
@@ -194,8 +259,25 @@ const styles = StyleSheet.create({
     color: '#052e16',
     fontWeight: '700',
   },
+  loginHint: {
+    color: '#94a3b8',
+    fontStyle: 'italic',
+  },
   result: {
-    color: '#93c5fd',
+    color: '#fda4af',
+  },
+  resultOk: {
+    color: '#86efac',
+  },
+  viewTicketsButton: {
+    backgroundColor: '#0ea5e9',
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  viewTicketsText: {
+    color: '#082f49',
+    fontWeight: '700',
   },
   error: {
     color: '#fda4af',

@@ -34,7 +34,8 @@ const SORT_OPTIONS: SortOption[] = [
       <table class="table table-zebra bg-base-100 shadow-lg rounded-box">
         <thead>
           <tr class="bg-base-200">
-            <th>Bilet</th>
+            <th>Użytkownik</th>
+            <th>Pula</th>
             <th>Kod</th>
             <th>Typ</th>
             <th>Status</th>
@@ -45,7 +46,8 @@ const SORT_OPTIONS: SortOption[] = [
         <tbody>
           @for (item of (pageData$ | async)?.content ?? []; track item.id) {
             <tr class="hover">
-              <td class="text-xs font-mono">{{ item.ticketId }}</td>
+              <td>{{ item.username || '-' }}</td>
+              <td>{{ item.poolName || '-' }}</td>
               <td class="font-mono">{{ item.codeValue }}</td>
               <td><span class="badge badge-ghost badge-sm">{{ item.codeType }}</span></td>
               <td><span class="badge badge-ghost badge-sm">{{ item.status }}</span></td>
@@ -56,7 +58,7 @@ const SORT_OPTIONS: SortOption[] = [
               </td>
             </tr>
           } @empty {
-            <tr><td colspan="6" class="text-center py-4">Brak kodów</td></tr>
+            <tr><td colspan="7" class="text-center py-4">Brak kodów</td></tr>
           }
         </tbody>
       </table>

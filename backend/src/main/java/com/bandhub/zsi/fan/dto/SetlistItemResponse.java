@@ -5,6 +5,8 @@ import java.util.UUID;
 public record SetlistItemResponse(
         UUID id,
         UUID setlistId,
+        String setlistTitle,
+        String concertName,
         String songTitle,
         int songOrder,
         Integer durationSeconds

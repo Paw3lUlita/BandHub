@@ -6,6 +6,8 @@ export interface TicketOrderItem {
   id: string;
   ticketOrderId: string;
   ticketPoolId: string;
+  ticketPoolName?: string;
+  concertName?: string;
   quantity: number;
   unitPrice: number;
   currency: string;

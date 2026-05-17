@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { setUnauthorizedHandler } from '@/lib/authEvents';
 import { clearAccessToken, getAccessToken, setAccessToken } from '@/lib/storage';
 import { apiRequest } from '@/lib/http';
 
@@ -7,6 +8,8 @@ type AuthContextValue = {
   username: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  sessionExpired: boolean;
+  clearSessionExpired: () => void;
   login: (username: string, password: string) => Promise<void>;
   register: (input: RegisterInput) => Promise<void>;
   logout: () => Promise<void>;
@@ -50,6 +53,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [username, setUsername] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [sessionExpired, setSessionExpired] = useState(false);
+
+  const clearSession = useCallback(async () => {
+    await clearAccessToken();
+    setToken(null);
+    setUsername(null);
+  }, []);
 
   useEffect(() => {
     getAccessToken()
@@ -63,10 +73,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .finally(() => setIsLoading(false));
   }, []);
 
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      clearSession();
+      setSessionExpired(true);
+    });
+    return () => setUnauthorizedHandler(null);
+  }, [clearSession]);
+
+  const clearSessionExpired = useCallback(() => {
+    setSessionExpired(false);
+  }, []);
+
   const persist = async (next: StoredAuth) => {
     await setAccessToken(next.token);
     setToken(next.token);
     setUsername(next.username);
+    setSessionExpired(false);
   };
 
   const login = async (loginUsername: string, password: string) => {
@@ -99,9 +122,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = async () => {
-    await clearAccessToken();
-    setToken(null);
-    setUsername(null);
+    await clearSession();
+    setSessionExpired(false);
   };
 
   const value = useMemo<AuthContextValue>(
@@ -110,11 +132,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       username,
       isAuthenticated: Boolean(token),
       isLoading,
+      sessionExpired,
+      clearSessionExpired,
       login,
       register,
       logout,
     }),
-    [token, username, isLoading],
+    [token, username, isLoading, sessionExpired, clearSessionExpired],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

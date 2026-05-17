@@ -2,10 +2,10 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput } from 'react-native';
 import { placeOrder } from '@/lib/api';
-import { saveMerchOrder } from '@/lib/storage';
 import { Screen } from '@/components/ui/Screen';
 import { useCart } from '@/providers/CartProvider';
 import { useAuth } from '@/providers/AuthProvider';
+import { ApiError } from '@/lib/http';
 
 export default function CheckoutScreen() {
   const router = useRouter();
@@ -17,33 +17,27 @@ export default function CheckoutScreen() {
   const [submitting, setSubmitting] = useState(false);
 
   const submit = async () => {
-    if (items.length === 0) {
+    if (items.length === 0 || !token) {
       return;
     }
 
     setSubmitting(true);
+    setResult(null);
     try {
       const orderItems = items.reduce<Record<string, number>>((acc, item) => {
         acc[item.productId] = item.quantity;
         return acc;
       }, {});
-      const response = await placeOrder(orderItems, address, paymentProvider, token);
-      const ref = response.location?.split('/').pop() ?? 'unknown';
-      await saveMerchOrder({
-        id: `${ref}-${Date.now()}`,
-        orderRef: ref,
-        createdAt: new Date().toISOString(),
-        totalAmount,
-        currency: items[0]?.currency ?? 'PLN',
-        items,
-        deliveryAddress: address,
-        paymentProvider,
-      });
+      await placeOrder(orderItems, address, paymentProvider, token);
       clear();
-      setResult(`Zamowienie przyjete. Ref: ${ref}`);
+      setResult('Zamowienie przyjete.');
       setTimeout(() => router.replace('/(tabs)/account'), 700);
     } catch (err) {
-      setResult(err instanceof Error ? err.message : 'Nie udalo sie zlozyc zamowienia');
+      if (err instanceof ApiError && err.status === 401) {
+        setResult('Sesja wygasla - zaloguj sie ponownie w zakladce Konto.');
+      } else {
+        setResult(err instanceof Error ? err.message : 'Nie udalo sie zlozyc zamowienia');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -73,7 +67,7 @@ export default function CheckoutScreen() {
         style={styles.input}
       />
 
-      <Pressable disabled={submitting || items.length === 0} onPress={submit} style={styles.button}>
+      <Pressable disabled={submitting || items.length === 0 || !token} onPress={submit} style={styles.button}>
         <Text style={styles.buttonText}>{submitting ? 'Wysylanie...' : 'Zloz zamowienie'}</Text>
       </Pressable>
 

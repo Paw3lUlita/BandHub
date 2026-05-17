@@ -1,26 +1,31 @@
 import { Link, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
 import { Screen } from '@/components/ui/Screen';
 import { RequireAuth } from '@/components/ui/RequireAuth';
-import { getTicketPurchases } from '@/lib/storage';
-import { LocalTicketPurchase } from '@/types/api';
+import { fetchMyTicketOrders } from '@/lib/api';
+import { MyTicketOrderResponse } from '@/types/api';
 import { useAuth } from '@/providers/AuthProvider';
 import { useText } from '@/providers/DictionaryProvider';
 
 export default function TicketsScreen() {
-  const { isAuthenticated } = useAuth();
-  const [tickets, setTickets] = useState<LocalTicketPurchase[]>([]);
+  const { isAuthenticated, token } = useAuth();
+  const [tickets, setTickets] = useState<MyTicketOrderResponse[]>([]);
+  const [loading, setLoading] = useState(false);
   const t = useText();
 
   useFocusEffect(
     useCallback(() => {
-      if (!isAuthenticated) {
+      if (!isAuthenticated || !token) {
         setTickets([]);
         return;
       }
-      getTicketPurchases().then(setTickets);
-    }, [isAuthenticated]),
+      setLoading(true);
+      fetchMyTicketOrders(token)
+        .then(setTickets)
+        .catch(() => setTickets([]))
+        .finally(() => setLoading(false));
+    }, [isAuthenticated, token]),
   );
 
   return (
@@ -34,11 +39,13 @@ export default function TicketsScreen() {
         <Text style={styles.subheader}>
           {t(
             'tickets.subtitle',
-            'Lokalna historia zakupow z endpointu /api/public/ticket-orders',
+            'Historia zakupow z Twojego konta fana.',
           )}
         </Text>
 
-        {tickets.length === 0 ? (
+        {loading ? <ActivityIndicator color="#38bdf8" style={{ marginVertical: 12 }} /> : null}
+
+        {!loading && tickets.length === 0 ? (
           <Text style={styles.empty}>
             {t('tickets.empty', 'Brak biletow. Kup pierwszy bilet z zakladki Koncerty.')}
           </Text>
@@ -46,13 +53,14 @@ export default function TicketsScreen() {
 
         {tickets.map((ticket) => (
           <Link
-            key={ticket.id}
-            href={{ pathname: '/tickets/[id]', params: { id: ticket.id } }}
+            key={ticket.orderId}
+            href={{ pathname: '/tickets/[id]', params: { id: ticket.orderId } }}
             asChild>
             <Pressable style={styles.card}>
               <Text style={styles.title}>{ticket.concertName}</Text>
               <Text style={styles.meta}>
-                {t('tickets.label.purchasedAt', 'Kupiono')}: {new Date(ticket.purchasedAt).toLocaleString()}
+                {t('tickets.label.purchasedAt', 'Kupiono')}:{' '}
+                {new Date(ticket.createdAt).toLocaleString()}
               </Text>
               <Text style={styles.meta}>
                 {t('tickets.label.codes', 'Kody')}: {ticket.ticketCodes.length}
