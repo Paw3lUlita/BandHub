@@ -121,9 +121,7 @@ BandHub/
 
 Szczegóły architektury, modułów i scenariuszy E2E:
 
-- [`docs/kompendium-projektu.md`](docs/kompendium-projektu.md) — przewodnik po całym systemie
 - [`docs/dokumentacja-techniczna.md`](docs/dokumentacja-techniczna.md) — dokumentacja techniczna i sprinty
-- [`docs/architecture-and-patterns.md`](docs/architecture-and-patterns.md) — wzorce i decyzje architektoniczne
 
 ## Zatrzymanie środowiska
 
@@ -131,4 +129,4 @@ Szczegóły architektury, modułów i scenariuszy E2E:
 docker compose down
 ```
 
-Backend i frontendy zatrzymujesz standardowo (`Ctrl+C` w terminalu).
+Backend i frontendy zatrzymujemy standardowo (`Ctrl+C` w terminalu).
