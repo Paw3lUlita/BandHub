@@ -62,4 +62,14 @@ public class Shipment {
         this.deliveredAt = deliveredAt;
         this.deliveryAddress = deliveryAddress;
     }
+
+    public void markAsShipped(LocalDateTime shippedAt) {
+        this.status = "SHIPPED";
+        this.shippedAt = shippedAt;
+    }
+
+    public void markAsDelivered(LocalDateTime deliveredAt) {
+        this.status = "DELIVERED";
+        this.deliveredAt = deliveredAt;
+    }
 }

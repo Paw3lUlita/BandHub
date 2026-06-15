@@ -126,6 +126,28 @@ public class ConcertAdminService {
         return descending ? comparator.reversed() : comparator;
     }
 
+    /**
+     * Powiązuje koncert z trasą — wywoływane z modułu logistyki przy zapisie odcinka trasy z wybranym koncertem.
+     */
+    public void assignConcertToTour(UUID concertId, UUID tourId) {
+        Concert concert = concertRepository.findById(concertId)
+                .orElseThrow(() -> new EntityNotFoundException("Concert not found: " + concertId));
+        concert.assignToTour(tourId);
+        concertRepository.save(concert);
+    }
+
+    /**
+     * Odpina koncert od trasy, jeśli nadal wskazuje na tę trasę (gdy odcinek trasy został usunięty lub zmieniony).
+     */
+    public void unassignConcertFromTour(UUID concertId, UUID tourId) {
+        concertRepository.findById(concertId).ifPresent(concert -> {
+            if (tourId != null && tourId.equals(concert.getTourId())) {
+                concert.clearTourAssignment();
+                concertRepository.save(concert);
+            }
+        });
+    }
+
     private ConcertResponse toResponse(Concert concert) {
         return new ConcertResponse(
                 concert.getId(),

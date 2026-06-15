@@ -39,11 +39,25 @@ class SqlTourLegRepository implements TourLegRepository {
         return new PagedResult<>(result.getContent(), result.getTotalElements());
     }
     @Override public void deleteById(UUID id) { jpaRepository.deleteById(id); }
+
+    @Override
+    public boolean existsByTour_IdAndConcertIdAndIdNot(UUID tourId, UUID concertId, UUID excludeLegId) {
+        return jpaRepository.existsByTour_IdAndConcertIdAndIdNot(tourId, concertId, excludeLegId);
+    }
+
+    @Override
+    public boolean existsByConcertIdAndTour_IdNot(UUID concertId, UUID tourId) {
+        return jpaRepository.existsByConcertIdAndTour_IdNot(concertId, tourId);
+    }
 }
 
 interface JpaTourLegRepository extends JpaRepository<TourLeg, UUID> {
 
     Optional<TourLeg> findByIdAndTour_Id(UUID id, UUID tourId);
+
+    boolean existsByTour_IdAndConcertIdAndIdNot(UUID tourId, UUID concertId, UUID id);
+
+    boolean existsByConcertIdAndTour_IdNot(UUID concertId, UUID tourId);
 
     @Query("SELECT t FROM TourLeg t WHERE LOWER(COALESCE(t.city, '')) LIKE LOWER(:pattern) OR LOWER(COALESCE(t.venueName, '')) LIKE LOWER(:pattern)")
     org.springframework.data.domain.Page<TourLeg> findAllFiltered(@Param("pattern") String pattern, Pageable pageable);

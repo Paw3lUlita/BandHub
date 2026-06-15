@@ -14,4 +14,8 @@ public interface TourLegRepository {
     List<TourLeg> findAll();
     PagedResult<TourLeg> findPage(int page, int size, String sortBy, String sortDir, String q);
     void deleteById(UUID id);
+
+    boolean existsByTour_IdAndConcertIdAndIdNot(UUID tourId, UUID concertId, UUID excludeLegId);
+
+    boolean existsByConcertIdAndTour_IdNot(UUID concertId, UUID tourId);
 }

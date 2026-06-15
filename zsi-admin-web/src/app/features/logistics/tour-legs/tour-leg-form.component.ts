@@ -1,14 +1,16 @@
 import { Component, inject, OnInit } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
+import { Concert, ConcertService } from '../../../core/services/concert.service';
 import { TourLegService, CreateTourLegRequest } from '../../../core/services/tour-leg.service';
 import { LogisticsService } from '../../../core/services/logistics.service';
 
 @Component({
   selector: 'app-tour-leg-form',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [DatePipe, ReactiveFormsModule, RouterLink],
   template: `
     <div class="max-w-2xl mx-auto">
       <h2 class="text-2xl font-bold mb-6">{{ isEdit ? 'Edytuj odcinek trasy' : 'Nowy odcinek trasy' }}</h2>
@@ -24,15 +26,28 @@ import { LogisticsService } from '../../../core/services/logistics.service';
             </select>
           </div>
 
-          <div class="grid grid-cols-2 gap-4">
-            <div class="form-control">
-              <label class="label">Kolejność</label>
-              <input formControlName="legOrder" type="number" class="input input-bordered" />
-            </div>
-            <div class="form-control">
-              <label class="label">ID koncertu (opcjonalnie)</label>
-              <input formControlName="concertId" type="text" class="input input-bordered font-mono text-sm" placeholder="UUID" />
-            </div>
+          <div class="form-control">
+            <label class="label">Kolejność na trasie</label>
+            <input formControlName="legOrder" type="number" class="input input-bordered w-32" />
+          </div>
+
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text">Koncert (opcjonalnie)</span>
+            </label>
+            <select formControlName="concertId" class="select select-bordered">
+              <option value="">— Brak koncertu —</option>
+              @for (c of concerts; track c.id) {
+                <option [value]="c.id">
+                  {{ c.name }} — {{ c.date | date:'dd.MM.yyyy HH:mm' }} ({{ c.city }})
+                </option>
+              }
+            </select>
+            @if (concerts.length === 0) {
+              <label class="label">
+                <span class="label-text-alt text-warning">Brak koncertów. Najpierw dodaj wydarzenie w module Koncerty.</span>
+              </label>
+            }
           </div>
 
           <div class="form-control">
@@ -80,8 +95,10 @@ export class TourLegFormComponent implements OnInit {
   private router = inject(Router);
   private legService = inject(TourLegService);
   private logisticsService = inject(LogisticsService);
+  private concertService = inject(ConcertService);
 
   tours: { id: string; name: string }[] = [];
+  concerts: Concert[] = [];
   isEdit = false;
   legId: string | null = null;
   submitting = false;
@@ -103,31 +120,47 @@ export class TourLegFormComponent implements OnInit {
     this.legId = this.isEdit ? idParam : null;
 
     forkJoin({
-      tours: this.logisticsService.getAllTours()
-    }).subscribe(({ tours }) => {
+      tours: this.logisticsService.getAllTours(),
+      concerts: this.concertService.getAll()
+    }).subscribe(({ tours, concerts }) => {
       this.tours = tours;
+      this.concerts = concerts.sort(
+        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+      );
+
       const qpTour = this.route.snapshot.queryParamMap.get('tourId');
       if (!this.isEdit && qpTour) {
         this.form.patchValue({ tourId: qpTour });
       } else if (!this.isEdit && tours.length > 0 && !this.form.value.tourId) {
         this.form.patchValue({ tourId: tours[0].id });
       }
-    });
 
-    if (this.isEdit && this.legId) {
-      this.legService.getOne(this.legId).subscribe(leg => {
-        this.form.patchValue({
-          tourId: leg.tourId,
-          concertId: leg.concertId ?? '',
-          legOrder: leg.legOrder,
-          city: leg.city,
-          venueName: leg.venueName ?? '',
-          legDate: leg.legDate ? this.toLocal(leg.legDate) : '',
-          plannedBudget: leg.plannedBudget,
-          currency: leg.currency ?? 'PLN'
-        });
-      });
-    }
+      if (this.isEdit && this.legId) {
+        this.legService.getOne(this.legId).subscribe(leg => this.patchLegForm(leg));
+      }
+    });
+  }
+
+  private patchLegForm(leg: {
+    tourId: string;
+    concertId: string | null;
+    legOrder: number;
+    city: string;
+    venueName: string | null;
+    legDate: string | null;
+    plannedBudget: number | null;
+    currency: string | null;
+  }) {
+    this.form.patchValue({
+      tourId: leg.tourId,
+      concertId: leg.concertId ?? '',
+      legOrder: leg.legOrder,
+      city: leg.city,
+      venueName: leg.venueName ?? '',
+      legDate: leg.legDate ? this.toLocal(leg.legDate) : '',
+      plannedBudget: leg.plannedBudget,
+      currency: leg.currency ?? 'PLN'
+    });
   }
 
   onSubmit() {

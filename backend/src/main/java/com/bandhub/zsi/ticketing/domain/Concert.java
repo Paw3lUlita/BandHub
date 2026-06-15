@@ -35,6 +35,10 @@ public class Concert {
     @JoinColumn(name = "venue_id") // To pasuje do V1
     private Venue venue;
 
+    /** Trasa koncertowa — ustawiane przy powiązaniu koncertu z odcinkiem trasy (tour_legs). */
+    @Column(name = "tour_id")
+    private UUID tourId;
+
     @OneToMany(mappedBy = "concert", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<TicketPool> ticketPools = new ArrayList<>();
 
@@ -66,5 +70,13 @@ public class Concert {
         Money money = new Money(price, currency);
         TicketPool pool = new TicketPool(this, poolName, money, quantity);
         this.ticketPools.add(pool);
+    }
+
+    public void assignToTour(UUID tourId) {
+        this.tourId = tourId;
+    }
+
+    public void clearTourAssignment() {
+        this.tourId = null;
     }
 }

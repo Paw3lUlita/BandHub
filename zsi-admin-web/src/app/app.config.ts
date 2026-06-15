@@ -9,7 +9,7 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideRouter(routes, withComponentInputBinding()),
 
-    // WAŻNE: Tu wpinamy automatyczne dołączanie tokena do zapytań
+    // Tu wpinamy automatyczne dołączanie tokena do zapytań
     provideHttpClient(withInterceptors([authInterceptor() as HttpInterceptorFn])),
 
     provideAuth(authConfig)

@@ -80,10 +80,14 @@ interface JpaTourRepository extends JpaRepository<Tour, UUID> {
 
     @Query(value = """
             SELECT COALESCE(SUM(to2.total_amount), 0)
-            FROM concerts c
-            JOIN ticket_orders to2 ON to2.concert_id = c.id
-            WHERE c.tour_id = :tourId
-              AND to2.status <> 'CANCELLED'
+            FROM ticket_orders to2
+            WHERE COALESCE(UPPER(TRIM(to2.status)), '') <> 'CANCELLED'
+              AND to2.concert_id IN (
+                  SELECT c.id FROM concerts c WHERE c.tour_id = :tourId
+                  UNION
+                  SELECT tl.concert_id FROM tour_legs tl
+                  WHERE tl.tour_id = :tourId AND tl.concert_id IS NOT NULL
+              )
             """, nativeQuery = true)
     BigDecimal sumTicketSalesRevenue(UUID tourId);
 }

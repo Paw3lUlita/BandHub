@@ -62,4 +62,9 @@ public class Payment {
         this.amount = amount;
         this.paidAt = paidAt;
     }
+
+    public void markAsPaid(LocalDateTime paidAt) {
+        this.status = "PAID";
+        this.paidAt = paidAt;
+    }
 }
