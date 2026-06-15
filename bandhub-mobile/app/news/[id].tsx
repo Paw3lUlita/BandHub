@@ -1,9 +1,11 @@
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text } from 'react-native';
+import { Screen } from '@/components/ui/Screen';
 import { fetchNews } from '@/lib/api';
 import { News } from '@/types/api';
-import { Screen } from '@/components/ui/Screen';
+import { AppText } from '@/components/ui/AppText';
+import { Card } from '@/components/ui/Card';
+import { LoadingView } from '@/components/ui/LoadingView';
 
 export default function NewsDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -24,49 +26,27 @@ export default function NewsDetailScreen() {
 
   if (loading) {
     return (
-      <Screen scroll={false} contentContainerStyle={styles.center}>
-        <ActivityIndicator color="#38bdf8" />
+      <Screen scroll={false}>
+        <LoadingView />
       </Screen>
     );
   }
 
   if (!news || error) {
     return (
-      <Screen scroll={false} contentContainerStyle={styles.center}>
-        <Text style={styles.error}>{error ?? 'Nie znaleziono newsa'}</Text>
+      <Screen scroll={false}>
+        <AppText variant="error">{error ?? 'Nie znaleziono newsa'}</AppText>
       </Screen>
     );
   }
 
   return (
     <Screen>
-      <Text style={styles.title}>{news.title}</Text>
-      <Text style={styles.meta}>{new Date(news.publishedDate).toLocaleString()}</Text>
-      <Text style={styles.content}>{news.content}</Text>
+      <AppText variant="h1">{news.title}</AppText>
+      <AppText variant="caption" muted>{new Date(news.publishedDate).toLocaleString()}</AppText>
+      <Card>
+        <AppText variant="body">{news.content}</AppText>
+      </Card>
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  center: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-  },
-  title: {
-    color: '#f8fafc',
-    fontSize: 24,
-    fontWeight: '700',
-  },
-  meta: {
-    color: '#94a3b8',
-    marginBottom: 8,
-  },
-  content: {
-    color: '#e2e8f0',
-    lineHeight: 22,
-  },
-  error: {
-    color: '#fda4af',
-  },
-});

@@ -1,23 +1,19 @@
 import React from 'react';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Tabs } from 'expo-router';
-
-import Colors from '@/constants/Colors';
-import { useColorScheme } from '@/components/useColorScheme';
+import { colors } from '@/constants/theme';
 import { useClientOnlyValue } from '@/components/useClientOnlyValue';
 import { useBranding } from '@/providers/BrandingProvider';
 import { useText } from '@/providers/DictionaryProvider';
 
-// You can explore the built-in icon families and icons on the web at https://icons.expo.fyi/
 function TabBarIcon(props: {
   name: React.ComponentProps<typeof FontAwesome>['name'];
   color: string;
 }) {
-  return <FontAwesome size={28} style={{ marginBottom: -3 }} {...props} />;
+  return <FontAwesome size={22} style={{ marginBottom: -2 }} {...props} />;
 }
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
   const { settings } = useBranding();
   const t = useText();
   const homeTitle = settings?.bandName ?? t('tabs.home', 'Home');
@@ -25,11 +21,27 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        tabBarInactiveTintColor: '#94a3b8',
-        tabBarStyle: { backgroundColor: '#111827' },
-        headerStyle: { backgroundColor: '#111827' },
-        headerTintColor: '#e2e8f0',
+        tabBarActiveTintColor: colors.accent,
+        tabBarInactiveTintColor: colors.textDim,
+        tabBarStyle: {
+          backgroundColor: colors.backgroundElevated,
+          borderTopColor: colors.border,
+          borderTopWidth: 1,
+          height: 60,
+          paddingBottom: 6,
+          paddingTop: 6,
+        },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '600',
+        },
+        headerStyle: {
+          backgroundColor: colors.backgroundElevated,
+          borderBottomColor: colors.border,
+          borderBottomWidth: 1,
+        },
+        headerTintColor: colors.text,
+        headerTitleStyle: { fontWeight: '700', fontSize: 17 },
         headerShown: useClientOnlyValue(false, true),
       }}>
       <Tabs.Screen

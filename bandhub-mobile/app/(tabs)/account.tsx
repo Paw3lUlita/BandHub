@@ -1,29 +1,37 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { View } from 'react-native';
 import { useAuth } from '@/providers/AuthProvider';
 import { Screen } from '@/components/ui/Screen';
 import { AuthForm } from '@/components/ui/AuthForm';
 import { MyOrderResponse, OrderStatus } from '@/types/api';
 import { fetchMyOrders } from '@/lib/api';
 import { useText } from '@/providers/DictionaryProvider';
+import { AppText } from '@/components/ui/AppText';
+import { Card } from '@/components/ui/Card';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { LoadingView } from '@/components/ui/LoadingView';
+import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { PriceTag } from '@/components/ui/PriceTag';
+import { SectionHeader } from '@/components/ui/SectionHeader';
+import { StatusPill } from '@/components/ui/StatusPill';
 
 function statusLabel(status: OrderStatus, t: (key: string, fallback: string) => string): string {
   return t(`order.status.${status}`, status);
 }
 
-function statusBadgeStyle(status: OrderStatus) {
+function statusTone(status: OrderStatus): 'default' | 'success' | 'warning' | 'error' | 'info' {
   switch (status) {
     case 'PAID':
-      return styles.badgePaid;
+      return 'success';
     case 'SHIPPED':
-      return styles.badgeShipped;
+      return 'info';
     case 'DELIVERED':
-      return styles.badgeDelivered;
+      return 'success';
     case 'CANCELLED':
-      return styles.badgeCancelled;
+      return 'error';
     default:
-      return styles.badgeNew;
+      return 'warning';
   }
 }
 
@@ -50,13 +58,10 @@ export default function AccountScreen() {
   if (!isAuthenticated) {
     return (
       <Screen>
-        <Text style={styles.header}>{t('account.title.guest', 'Witaj w BandHub')}</Text>
-        <Text style={styles.subheader}>
-          {t(
-            'account.subtitle.guest',
-            'Zaloguj sie lub zaloz konto fana, aby kupowac bilety i merch.',
-          )}
-        </Text>
+        <SectionHeader
+          title={t('account.title.guest', 'Witaj w BandHub')}
+          subtitle={t('account.subtitle.guest', 'Zaloguj sie lub zaloz konto fana, aby kupowac bilety i merch.')}
+        />
         <AuthForm />
       </Screen>
     );
@@ -64,165 +69,42 @@ export default function AccountScreen() {
 
   return (
     <Screen>
-      <View style={styles.profileCard}>
-        <Text style={styles.greeting}>
+      <Card accent>
+        <AppText variant="h2">
           {t('account.greeting', 'Witaj')}
           {username ? `, ${username}` : ''}!
-        </Text>
-        <Text style={styles.subheader}>
+        </AppText>
+        <AppText variant="caption" muted>
           {t('account.subtitle.user', 'Jestes zalogowany jako fan BandHub.')}
-        </Text>
-        <Pressable onPress={logout} style={styles.logoutButton}>
-          <Text style={styles.logoutText}>{t('account.button.logout', 'Wyloguj')}</Text>
-        </Pressable>
-      </View>
+        </AppText>
+        <PrimaryButton label={t('account.button.logout', 'Wyloguj')} onPress={logout} variant="danger" />
+      </Card>
 
-      <Text style={styles.section}>
-        {t('account.section.orders', 'Moje zamowienia merch')}
-      </Text>
+      <SectionHeader title={t('account.section.orders', 'Moje zamowienia merch')} />
 
-      {loadingOrders ? (
-        <ActivityIndicator color="#38bdf8" style={{ marginVertical: 12 }} />
-      ) : null}
+      {loadingOrders ? <LoadingView /> : null}
 
       {!loadingOrders && orders.length === 0 ? (
-        <View style={styles.emptyCard}>
-          <Text style={styles.emptyText}>
-            {t('account.empty.orders', 'Brak zamowien. Zajrzyj do zakladki Merch.')}
-          </Text>
-        </View>
+        <EmptyState message={t('account.empty.orders', 'Brak zamowien. Zajrzyj do zakladki Merch.')} />
       ) : null}
 
       {orders.map((order) => (
-        <View key={order.id} style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.orderTitle}>Zamowienie #{order.id.slice(0, 8)}</Text>
-            <View style={[styles.badge, statusBadgeStyle(order.status)]}>
-              <Text style={styles.badgeText}>{statusLabel(order.status, t)}</Text>
-            </View>
+        <Card key={order.id}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+            <AppText variant="h3" style={{ flex: 1 }}>
+              Zamowienie #{order.id.slice(0, 8)}
+            </AppText>
+            <StatusPill label={statusLabel(order.status, t)} tone={statusTone(order.status)} />
           </View>
-          <Text style={styles.meta}>{new Date(order.createdAt).toLocaleString()}</Text>
-          <Text style={styles.amount}>
-            {Number(order.totalAmount).toFixed(2)} {order.currency}
-          </Text>
+          <AppText variant="caption" muted>{new Date(order.createdAt).toLocaleString()}</AppText>
+          <PriceTag amount={Number(order.totalAmount).toFixed(2)} currency={order.currency} large />
           {order.items.map((item) => (
-            <Text key={item.productId} style={styles.itemLine}>
+            <AppText key={item.productId} variant="caption" muted>
               {item.quantity}x {item.productName}
-            </Text>
+            </AppText>
           ))}
-        </View>
+        </Card>
       ))}
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  header: {
-    color: '#f8fafc',
-    fontSize: 24,
-    fontWeight: '700',
-  },
-  subheader: {
-    color: '#94a3b8',
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  profileCard: {
-    backgroundColor: '#1e293b',
-    borderRadius: 16,
-    padding: 16,
-    gap: 8,
-    borderWidth: 1,
-    borderColor: '#334155',
-  },
-  greeting: {
-    color: '#f8fafc',
-    fontSize: 22,
-    fontWeight: '700',
-  },
-  section: {
-    color: '#e2e8f0',
-    fontWeight: '600',
-    fontSize: 17,
-    marginTop: 8,
-  },
-  card: {
-    backgroundColor: '#1e293b',
-    borderRadius: 12,
-    padding: 12,
-    gap: 6,
-    borderWidth: 1,
-    borderColor: '#334155',
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: 8,
-  },
-  orderTitle: {
-    color: '#f8fafc',
-    fontWeight: '600',
-    flex: 1,
-  },
-  badge: {
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  badgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#0f172a',
-  },
-  badgeNew: {
-    backgroundColor: '#fbbf24',
-  },
-  badgePaid: {
-    backgroundColor: '#86efac',
-  },
-  badgeShipped: {
-    backgroundColor: '#93c5fd',
-  },
-  badgeDelivered: {
-    backgroundColor: '#a5b4fc',
-  },
-  badgeCancelled: {
-    backgroundColor: '#fda4af',
-  },
-  amount: {
-    color: '#22d3ee',
-    fontWeight: '700',
-  },
-  meta: {
-    color: '#cbd5e1',
-    fontSize: 13,
-  },
-  itemLine: {
-    color: '#94a3b8',
-    fontSize: 13,
-  },
-  emptyCard: {
-    backgroundColor: '#0f172a',
-    borderRadius: 12,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#334155',
-    borderStyle: 'dashed',
-  },
-  emptyText: {
-    color: '#94a3b8',
-  },
-  logoutButton: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#f43f5e',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    marginTop: 4,
-  },
-  logoutText: {
-    color: '#fff1f2',
-    fontWeight: '700',
-  },
-});

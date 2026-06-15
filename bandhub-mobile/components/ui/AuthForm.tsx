@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { RegisterInput, useAuth } from '@/providers/AuthProvider';
 import { useText } from '@/providers/DictionaryProvider';
+import { colors, radius, spacing } from '@/constants/theme';
 
 type Mode = 'login' | 'register';
 
@@ -223,7 +224,7 @@ export function AuthForm() {
           pressed && styles.submitPressed,
         ]}>
         {submitting ? (
-          <ActivityIndicator color="#0f172a" />
+          <ActivityIndicator color="#fff" />
         ) : (
           <Text style={styles.submitText}>
             {isRegister
@@ -238,19 +239,19 @@ export function AuthForm() {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#1e293b',
-    borderRadius: 16,
-    padding: 18,
-    gap: 14,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    padding: spacing.lg,
+    gap: spacing.md,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: colors.border,
   },
   sessionBanner: {
     backgroundColor: '#422006',
-    borderRadius: 10,
-    padding: 12,
+    borderRadius: radius.md,
+    padding: spacing.md,
     borderWidth: 1,
-    borderColor: '#f59e0b',
+    borderColor: colors.warning,
   },
   sessionBannerText: {
     color: '#fde68a',
@@ -259,29 +260,29 @@ const styles = StyleSheet.create({
   },
   tabs: {
     flexDirection: 'row',
-    backgroundColor: '#0f172a',
-    borderRadius: 12,
+    backgroundColor: colors.background,
+    borderRadius: radius.md,
     padding: 4,
     gap: 4,
   },
   tab: {
     flex: 1,
     paddingVertical: 10,
-    borderRadius: 10,
+    borderRadius: radius.sm,
     alignItems: 'center',
   },
   tabActive: {
-    backgroundColor: '#38bdf8',
+    backgroundColor: colors.primary,
   },
   tabText: {
-    color: '#94a3b8',
+    color: colors.textMuted,
     fontWeight: '600',
   },
   tabTextActive: {
-    color: '#0f172a',
+    color: '#fff',
   },
   subtitle: {
-    color: '#94a3b8',
+    color: colors.textMuted,
     fontSize: 13,
     lineHeight: 18,
   },
@@ -292,29 +293,29 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   label: {
-    color: '#cbd5e1',
+    color: colors.textSecondary,
     fontSize: 13,
     fontWeight: '500',
   },
   input: {
-    backgroundColor: '#0f172a',
-    borderRadius: 10,
+    backgroundColor: colors.background,
+    borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: '#334155',
-    color: '#f8fafc',
-    paddingHorizontal: 12,
+    borderColor: colors.border,
+    color: colors.text,
+    paddingHorizontal: spacing.md,
     paddingVertical: 10,
   },
   inputError: {
-    borderColor: '#f43f5e',
+    borderColor: colors.errorDark,
   },
   fieldHint: {
-    color: '#64748b',
+    color: colors.textDim,
     fontSize: 12,
     marginTop: 4,
   },
   fieldError: {
-    color: '#fda4af',
+    color: colors.error,
     fontSize: 12,
     marginTop: 4,
   },
@@ -323,13 +324,13 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   error: {
-    color: '#fda4af',
+    color: colors.error,
     fontSize: 13,
   },
   submit: {
-    backgroundColor: '#38bdf8',
-    borderRadius: 12,
-    paddingVertical: 12,
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
+    paddingVertical: spacing.md,
     alignItems: 'center',
   },
   submitPressed: {
@@ -339,7 +340,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   submitText: {
-    color: '#0f172a',
+    color: '#fff',
     fontWeight: '700',
     fontSize: 15,
   },

@@ -1,10 +1,16 @@
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { Screen } from '@/components/ui/Screen';
 import { fetchMyTicketOrders } from '@/lib/api';
 import { MyTicketOrderResponse } from '@/types/api';
 import { useAuth } from '@/providers/AuthProvider';
+import { AppText } from '@/components/ui/AppText';
+import { Card } from '@/components/ui/Card';
+import { LoadingView } from '@/components/ui/LoadingView';
+import { SectionHeader } from '@/components/ui/SectionHeader';
+import { StatusPill } from '@/components/ui/StatusPill';
+import { colors, radius } from '@/constants/theme';
 
 export default function TicketDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -22,78 +28,53 @@ export default function TicketDetailScreen() {
       .finally(() => setLoading(false));
   }, [token]);
 
-  const order = useMemo(
-    () => orders.find((entry) => entry.orderId === id),
-    [id, orders],
-  );
+  const order = useMemo(() => orders.find((entry) => entry.orderId === id), [id, orders]);
 
   if (loading) {
     return (
-      <Screen scroll={false} contentContainerStyle={styles.center}>
-        <ActivityIndicator color="#38bdf8" />
+      <Screen scroll={false}>
+        <LoadingView />
       </Screen>
     );
   }
 
   if (!order) {
     return (
-      <Screen scroll={false} contentContainerStyle={styles.center}>
-        <Text style={styles.error}>Nie znaleziono biletu.</Text>
+      <Screen scroll={false}>
+        <AppText variant="error">Nie znaleziono biletu.</AppText>
       </Screen>
     );
   }
 
   return (
     <Screen>
-      <Text style={styles.title}>{order.concertName}</Text>
-      <Text style={styles.meta}>Order ID: {order.orderId}</Text>
-      <Text style={styles.meta}>Data: {new Date(order.createdAt).toLocaleString()}</Text>
-      <Text style={styles.meta}>Status: {order.status}</Text>
+      <AppText variant="h1">{order.concertName}</AppText>
+      <AppText variant="caption" muted>Order ID: {order.orderId}</AppText>
+      <AppText variant="caption" muted>Data: {new Date(order.createdAt).toLocaleString()}</AppText>
+      <StatusPill label={order.status} tone="info" />
 
-      <Text style={styles.section}>Kody biletow</Text>
+      <SectionHeader title="Kody biletow" />
       {order.ticketCodes.map((code) => (
-        <View key={code} style={styles.codeBox}>
-          <Text style={styles.code}>{code}</Text>
-        </View>
+        <Card key={code} style={styles.codeBox}>
+          <AppText variant="body" style={styles.code}>
+            {code}
+          </AppText>
+        </Card>
       ))}
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  center: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-  },
-  title: {
-    color: '#f8fafc',
-    fontSize: 24,
-    fontWeight: '700',
-  },
-  meta: {
-    color: '#94a3b8',
-  },
-  section: {
-    color: '#e2e8f0',
-    fontSize: 18,
-    fontWeight: '600',
-    marginTop: 10,
-  },
   codeBox: {
-    backgroundColor: '#111827',
-    borderColor: '#334155',
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    backgroundColor: colors.backgroundElevated,
+    borderColor: colors.accent + '44',
   },
   code: {
-    color: '#22d3ee',
     fontFamily: 'monospace',
     fontWeight: '700',
-  },
-  error: {
-    color: '#fda4af',
+    color: colors.accent,
+    fontSize: 16,
+    letterSpacing: 1,
   },
 });

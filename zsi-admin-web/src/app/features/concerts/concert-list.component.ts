@@ -18,10 +18,10 @@ const SORT_OPTIONS: SortOption[] = [
   standalone: true,
   imports: [AsyncPipe, DatePipe, RouterLink, ListPageControlsComponent],
   template: `
-    <div class="overflow-x-auto">
+    <div class="bh-page overflow-x-auto">
       <div class="flex justify-between items-center mb-4">
-        <h2 class="text-2xl font-bold">Koncerty</h2>
-        <a routerLink="/admin/concerts/new" class="btn btn-primary btn-sm">
+        <h2 class="bh-page-title">Koncerty</h2>
+        <a routerLink="/admin/concerts/new" class="bh-btn-primary">
           + Dodaj Koncert
         </a>
       </div>
@@ -32,7 +32,7 @@ const SORT_OPTIONS: SortOption[] = [
         [totalPages]="(pageData$ | async)?.totalPages ?? 0"
         (paramsChange)="onParamsChange($event)"
       />
-      <table class="table table-zebra bg-base-100 shadow-lg rounded-box">
+      <table class="table table-zebra w-full">
         <thead>
           <tr class="bg-base-200">
             <th>Nazwa</th>
@@ -62,7 +62,7 @@ const SORT_OPTIONS: SortOption[] = [
             </tr>
           } @empty {
             <tr>
-              <td colspan="5" class="text-center py-8 text-gray-500">
+              <td colspan="5" class="bh-empty-state">
                 Brak zaplanowanych koncertów.
               </td>
             </tr>

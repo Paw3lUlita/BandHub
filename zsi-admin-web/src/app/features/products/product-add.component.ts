@@ -11,7 +11,7 @@ import { Observable } from 'rxjs';
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterLink],
   template: `
-    <div class="max-w-2xl mx-auto bg-base-100 shadow-xl rounded-box p-6">
+    <div class="bh-form-card p-6 md:p-8">
       <h2 class="text-2xl font-bold mb-6">
         {{ isEditMode ? 'Edytuj Produkt' : 'Dodaj Nowy Produkt' }}
       </h2>

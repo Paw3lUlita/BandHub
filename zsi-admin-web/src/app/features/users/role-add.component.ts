@@ -9,7 +9,7 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [ReactiveFormsModule, CommonModule, RouterLink],
   template: `
-    <div class="max-w-lg mx-auto bg-base-100 shadow-xl rounded-box p-6">
+    <div class="bh-form-card p-6 md:p-8">
       <h2 class="text-2xl font-bold mb-6">Dodaj rolę</h2>
 
       <form [formGroup]="form" (ngSubmit)="onSubmit()">

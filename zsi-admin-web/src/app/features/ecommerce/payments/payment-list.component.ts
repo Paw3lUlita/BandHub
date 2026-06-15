@@ -18,10 +18,10 @@ const PAYMENT_SORT_OPTIONS: SortOption[] = [
   standalone: true,
   imports: [AsyncPipe, CurrencyPipe, DatePipe, RouterLink, ListPageControlsComponent],
   template: `
-    <div class="overflow-x-auto">
+    <div class="bh-page overflow-x-auto">
       <div class="flex justify-between items-center mb-4">
-        <h2 class="text-2xl font-bold">Płatności</h2>
-        <a routerLink="/admin/payments/new" class="btn btn-primary btn-sm">+ Dodaj Płatność</a>
+        <h2 class="bh-page-title">Płatności</h2>
+        <a routerLink="/admin/payments/new" class="bh-btn-primary">+ Dodaj Płatność</a>
       </div>
       <app-list-page-controls
         [params]="params()"
@@ -30,7 +30,7 @@ const PAYMENT_SORT_OPTIONS: SortOption[] = [
         [totalPages]="(pageData$ | async)?.totalPages ?? 0"
         (paramsChange)="onParamsChange($event)"
       />
-      <table class="table table-zebra bg-base-100 shadow-lg rounded-box">
+      <table class="table table-zebra w-full">
         <thead>
           <tr class="bg-base-200">
             <th>Zamówienie</th>

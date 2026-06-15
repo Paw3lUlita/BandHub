@@ -9,7 +9,7 @@ import { VenueService, CreateVenueRequest } from '../../core/services/venue.serv
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterLink],
   template: `
-    <div class="max-w-2xl mx-auto bg-base-100 shadow-xl rounded-box p-6">
+    <div class="bh-form-card p-6 md:p-8">
       <h2 class="text-2xl font-bold mb-6">Nowe Miejsce Koncertowe</h2>
 
       <form [formGroup]="form" (ngSubmit)="onSubmit()">

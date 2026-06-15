@@ -1,11 +1,17 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput } from 'react-native';
+import { StyleSheet, TextInput, View } from 'react-native';
 import { placeOrder } from '@/lib/api';
 import { Screen } from '@/components/ui/Screen';
 import { useCart } from '@/providers/CartProvider';
 import { useAuth } from '@/providers/AuthProvider';
 import { ApiError } from '@/lib/http';
+import { AppText } from '@/components/ui/AppText';
+import { Card } from '@/components/ui/Card';
+import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { PriceTag } from '@/components/ui/PriceTag';
+import { SectionHeader } from '@/components/ui/SectionHeader';
+import { colors, radius, spacing } from '@/constants/theme';
 
 export default function CheckoutScreen() {
   const router = useRouter();
@@ -45,66 +51,61 @@ export default function CheckoutScreen() {
 
   return (
     <Screen>
-      <Text style={styles.header}>Checkout merch</Text>
-      <Text style={styles.meta}>Pozycje: {items.length}</Text>
-      <Text style={styles.meta}>
-        Suma: {totalAmount.toFixed(2)} {items[0]?.currency ?? 'PLN'}
-      </Text>
+      <SectionHeader title="Checkout merch" subtitle="Podaj adres dostawy i zloz zamowienie" />
 
-      <TextInput
-        value={address}
-        onChangeText={setAddress}
-        placeholder="Adres dostawy"
-        placeholderTextColor="#94a3b8"
-        style={styles.input}
+      <Card>
+        <AppText variant="caption" muted>
+          Pozycje: {items.length}
+        </AppText>
+        <PriceTag amount={totalAmount.toFixed(2)} currency={items[0]?.currency ?? 'PLN'} large />
+      </Card>
+
+      <View style={styles.field}>
+        <AppText variant="label">Adres dostawy</AppText>
+        <TextInput
+          value={address}
+          onChangeText={setAddress}
+          placeholder="Adres dostawy"
+          placeholderTextColor={colors.textDim}
+          style={styles.input}
+        />
+      </View>
+
+      <View style={styles.field}>
+        <AppText variant="label">Provider platnosci</AppText>
+        <TextInput
+          value={paymentProvider}
+          onChangeText={setPaymentProvider}
+          placeholder="Provider platnosci"
+          placeholderTextColor={colors.textDim}
+          style={styles.input}
+        />
+      </View>
+
+      <PrimaryButton
+        label={submitting ? 'Wysylanie...' : 'Zloz zamowienie'}
+        onPress={submit}
+        disabled={submitting || items.length === 0 || !token}
+        loading={submitting}
       />
 
-      <TextInput
-        value={paymentProvider}
-        onChangeText={setPaymentProvider}
-        placeholder="Provider platnosci"
-        placeholderTextColor="#94a3b8"
-        style={styles.input}
-      />
-
-      <Pressable disabled={submitting || items.length === 0 || !token} onPress={submit} style={styles.button}>
-        <Text style={styles.buttonText}>{submitting ? 'Wysylanie...' : 'Zloz zamowienie'}</Text>
-      </Pressable>
-
-      {result ? <Text style={styles.result}>{result}</Text> : null}
+      {result ? <AppText variant={result.includes('przyjete') ? 'success' : 'error'}>{result}</AppText> : null}
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
-    color: '#f8fafc',
-    fontSize: 24,
-    fontWeight: '700',
-  },
-  meta: {
-    color: '#cbd5e1',
+  field: {
+    gap: spacing.xs,
   },
   input: {
-    backgroundColor: '#1e293b',
-    borderRadius: 10,
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: '#334155',
-    color: '#f8fafc',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  button: {
-    backgroundColor: '#22c55e',
-    borderRadius: 10,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  buttonText: {
-    color: '#052e16',
-    fontWeight: '700',
-  },
-  result: {
-    color: '#93c5fd',
+    borderColor: colors.border,
+    color: colors.text,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    fontSize: 15,
   },
 });

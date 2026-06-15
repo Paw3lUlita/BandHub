@@ -9,7 +9,7 @@ import { DOCX_MODULE_TOUR_SETTLEMENT, DocxTemplate, DocxTemplateService } from '
   imports: [FormsModule, DatePipe],
   template: `
     <div class="max-w-5xl space-y-6">
-      <h2 class="text-2xl font-bold">Szablony DOCX (wydruki)</h2>
+      <h2 class="bh-page-title">Szablony DOCX (wydruki)</h2>
       <p class="text-sm text-base-content/70">
         Wgraj plik Word (.docx) z placeholderami w stylu Word (np. <code class="text-xs">&#36;&#123;tourName&#125;</code>).
         Moduł <strong>TOUR_SETTLEMENT</strong> — rozliczenie trasy. Pierwszy szablon jest aktywowany automatycznie.

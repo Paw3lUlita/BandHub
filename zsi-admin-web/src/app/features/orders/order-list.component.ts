@@ -21,11 +21,11 @@ type OrderListParams = ListPageParams & { status?: OrderStatus };
   standalone: true,
   imports: [AsyncPipe, DatePipe, CurrencyPipe, NgClass, FormsModule, RouterLink, ListPageControlsComponent],
   template: `
-    <div class="overflow-x-auto">
+    <div class="bh-page overflow-x-auto">
       <div class="flex justify-between items-center mb-4">
-        <h2 class="text-2xl font-bold">Zamówienia</h2>
+        <h2 class="bh-page-title">Zamówienia</h2>
       </div>
-      <div class="flex flex-wrap items-center gap-4 mb-4 p-3 bg-base-200 rounded-lg">
+      <div class="flex flex-wrap items-center gap-4 mb-4 bh-filter-bar">
         <div class="flex items-center gap-2">
           <label class="text-sm font-medium">Status:</label>
           <select class="select select-bordered select-sm" [ngModel]="params().status" (ngModelChange)="onStatusChange($event)">
@@ -45,7 +45,7 @@ type OrderListParams = ListPageParams & { status?: OrderStatus };
         [totalPages]="(pageData$ | async)?.totalPages ?? 0"
         (paramsChange)="onParamsChange($event)"
       />
-      <table class="table table-zebra bg-base-100 shadow-lg rounded-box">
+      <table class="table table-zebra w-full">
         <thead>
         <tr class="bg-base-200">
           <th>Data</th>
@@ -100,7 +100,7 @@ type OrderListParams = ListPageParams & { status?: OrderStatus };
     </tr>
         } @empty {
         <tr>
-          <td colspan="5" class="text-center py-8 text-gray-500">
+          <td colspan="5" class="bh-empty-state">
             Brak zamówień w systemie.
           </td>
         </tr>

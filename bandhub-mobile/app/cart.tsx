@@ -1,153 +1,103 @@
-import { Link } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { Screen } from '@/components/ui/Screen';
 import { useCart } from '@/providers/CartProvider';
 import { useText } from '@/providers/DictionaryProvider';
+import { AppText } from '@/components/ui/AppText';
+import { Card } from '@/components/ui/Card';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { PriceTag } from '@/components/ui/PriceTag';
+import { SectionHeader } from '@/components/ui/SectionHeader';
+import { colors, radius, spacing } from '@/constants/theme';
 
 export default function CartScreen() {
+  const router = useRouter();
   const { items, removeItem, increment, decrement, totalAmount } = useCart();
   const t = useText();
   const currency = items[0]?.currency ?? 'PLN';
 
   return (
     <Screen>
-      <Text style={styles.header}>{t('merch.button.cart', 'Koszyk')}</Text>
+      <SectionHeader title={t('merch.button.cart', 'Koszyk')} />
 
       {items.length === 0 ? (
-        <Text style={styles.empty}>{t('merch.empty', 'Brak produktow w sklepie.')}</Text>
+        <EmptyState message={t('merch.empty', 'Brak produktow w sklepie.')} />
       ) : null}
 
       {items.map((item) => {
         const atMax = item.stockQuantity != null && item.quantity >= item.stockQuantity;
         return (
-          <View key={item.productId} style={styles.card}>
-            <Text style={styles.title}>{item.name}</Text>
-            <Text style={styles.meta}>
-              {item.price} {item.currency} / szt.
-            </Text>
+          <Card key={item.productId}>
+            <AppText variant="h3">{item.name}</AppText>
+            <PriceTag amount={item.price} currency={item.currency} />
             <View style={styles.qtyRow}>
               <Pressable onPress={() => decrement(item.productId)} style={styles.qtyButton}>
-                <Text style={styles.qtyText}>-</Text>
+                <AppText variant="h3">-</AppText>
               </Pressable>
-              <Text style={styles.qtyValue}>{item.quantity}</Text>
+              <AppText variant="body" style={styles.qtyValue}>
+                {item.quantity}
+              </AppText>
               <Pressable
                 onPress={() => increment(item.productId)}
                 disabled={atMax}
                 style={[styles.qtyButton, atMax && styles.qtyButtonDisabled]}>
-                <Text style={styles.qtyText}>+</Text>
+                <AppText variant="h3">+</AppText>
               </Pressable>
-              <Text style={styles.lineTotal}>
+              <AppText variant="caption" muted>
                 = {(item.price * item.quantity).toFixed(2)} {item.currency}
-              </Text>
+              </AppText>
             </View>
-            <Pressable onPress={() => removeItem(item.productId)} style={styles.removeButton}>
-              <Text style={styles.removeText}>Usun</Text>
-            </Pressable>
-          </View>
+            <PrimaryButton label="Usun" onPress={() => removeItem(item.productId)} variant="danger" style={styles.removeBtn} />
+          </Card>
         );
       })}
 
-      <View style={styles.summary}>
-        <Text style={styles.summaryText}>
-          Suma: {totalAmount.toFixed(2)} {currency}
-        </Text>
-      </View>
+      {items.length > 0 ? (
+        <Card style={styles.summary}>
+          <AppText variant="label">Podsumowanie</AppText>
+          <PriceTag amount={totalAmount.toFixed(2)} currency={currency} large />
+        </Card>
+      ) : null}
 
       {items.length > 0 ? (
-        <Link href="/checkout" asChild>
-          <Pressable style={styles.checkoutButton}>
-            <Text style={styles.checkoutText}>Przejdz do checkoutu</Text>
-          </Pressable>
-        </Link>
+        <PrimaryButton label="Przejdz do checkoutu" onPress={() => router.push('/checkout')} />
       ) : null}
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
-    color: '#f8fafc',
-    fontSize: 24,
-    fontWeight: '700',
-  },
-  empty: {
-    color: '#cbd5e1',
-  },
-  card: {
-    backgroundColor: '#1e293b',
-    borderRadius: 12,
-    padding: 12,
-    gap: 8,
-  },
-  title: {
-    color: '#f8fafc',
-    fontWeight: '600',
-  },
-  meta: {
-    color: '#cbd5e1',
-    fontSize: 13,
-  },
   qtyRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: spacing.sm,
     flexWrap: 'wrap',
+    marginTop: spacing.sm,
   },
   qtyButton: {
-    backgroundColor: '#334155',
-    borderRadius: 8,
+    backgroundColor: colors.surfaceHover,
+    borderRadius: radius.sm,
     width: 36,
     height: 36,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   qtyButtonDisabled: {
     opacity: 0.4,
   },
-  qtyText: {
-    color: '#e2e8f0',
-    fontSize: 18,
+  qtyValue: {
+    minWidth: 28,
+    textAlign: 'center',
     fontWeight: '700',
   },
-  qtyValue: {
-    color: '#f8fafc',
-    fontWeight: '600',
-    minWidth: 24,
-    textAlign: 'center',
-  },
-  lineTotal: {
-    color: '#94a3b8',
-    fontSize: 13,
-  },
-  removeButton: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#7f1d1d',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  removeText: {
-    color: '#fecaca',
+  removeBtn: {
+    marginTop: spacing.sm,
+    minHeight: 40,
   },
   summary: {
-    backgroundColor: '#0f172a',
-    borderColor: '#334155',
-    borderWidth: 1,
-    borderRadius: 10,
-    padding: 12,
-  },
-  summaryText: {
-    color: '#e2e8f0',
-    fontWeight: '700',
-  },
-  checkoutButton: {
-    backgroundColor: '#22c55e',
-    borderRadius: 10,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  checkoutText: {
-    color: '#052e16',
-    fontWeight: '700',
+    gap: spacing.sm,
   },
 });

@@ -8,15 +8,15 @@ import { VenueService } from '../../core/services/venue.service';
   standalone: true,
   imports: [AsyncPipe, RouterLink],
   template: `
-    <div class="overflow-x-auto">
+    <div class="bh-page overflow-x-auto">
       <div class="flex justify-between items-center mb-4">
-        <h2 class="text-2xl font-bold">Miejsca Koncertowe</h2>
-        <a routerLink="/admin/venues/new" class="btn btn-primary btn-sm">
+        <h2 class="bh-page-title">Miejsca Koncertowe</h2>
+        <a routerLink="/admin/venues/new" class="bh-btn-primary">
           + Dodaj Miejsce
         </a>
       </div>
 
-      <table class="table table-zebra bg-base-100 shadow-lg rounded-box">
+      <table class="table table-zebra w-full">
         <thead>
         <tr class="bg-base-200">
           <th>Nazwa</th>
@@ -43,7 +43,7 @@ import { VenueService } from '../../core/services/venue.service';
         </tr>
         } @empty {
         <tr>
-          <td colspan="6" class="text-center py-8 text-gray-500">
+          <td colspan="6" class="bh-empty-state">
             Brak zdefiniowanych miejsc.
           </td>
         </tr>

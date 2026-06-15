@@ -11,7 +11,7 @@ import { TourSettlement, TourSettlementService } from '../../../core/services/to
   template: `
     <div class="max-w-2xl mx-auto space-y-6">
       <div class="flex justify-between items-center">
-        <h2 class="text-2xl font-bold">Rozliczenie trasy</h2>
+        <h2 class="bh-page-title">Rozliczenie trasy</h2>
         <a routerLink="/admin/tour-settlements" class="btn btn-ghost btn-sm">Lista</a>
       </div>
       @if (item(); as s) {
@@ -40,7 +40,7 @@ import { TourSettlement, TourSettlementService } from '../../../core/services/to
                   Pobierz DOCX
                 }
               </button>
-              <a [routerLink]="['/admin/logistics', s.tourId]" class="btn btn-primary btn-sm">Panel trasy</a>
+              <a [routerLink]="['/admin/logistics', s.tourId]" class="bh-btn-primary">Panel trasy</a>
             </div>
           </div>
         </div>

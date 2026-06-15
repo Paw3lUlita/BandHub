@@ -10,82 +10,69 @@ import { Observable } from 'rxjs';
   imports: [CommonModule, RouterLink],
   template: `
     @if (order$ | async; as order) {
-      <div class="max-w-4xl mx-auto">
-        <div class="flex justify-between items-center mb-6">
+      <div class="bh-page max-w-4xl mx-auto">
+        <div class="bh-page-header mb-2">
           <div>
-            <h2 class="text-2xl font-bold">Zamówienie #{{ order.id.slice(0, 8) }}...</h2>
-            <p class="text-gray-500">Złożone: {{ order.createdAt | date:'medium' }}</p>
+            <h2 class="bh-page-title">Zamówienie #{{ order.id.slice(0, 8) }}...</h2>
+            <p class="bh-page-subtitle">Złożone: {{ order.createdAt | date:'medium' }}</p>
           </div>
-          <a routerLink="/admin/orders" class="btn btn-ghost">← Wróć do listy</a>
+          <a routerLink="/admin/orders" class="btn btn-ghost btn-sm">← Wróć do listy</a>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <div class="card bg-base-100 shadow-xl">
-            <div class="card-body">
-              <h3 class="card-title text-sm uppercase text-gray-400">Status</h3>
-              <div class="text-xl font-bold" [class.text-primary]="order.status === 'NEW'">
-                {{ order.status }}
-              </div>
-            </div>
+        <div class="bh-detail-grid mb-6">
+          <div class="bh-stat-card">
+            <span class="bh-stat-label">Status</span>
+            <span class="bh-stat-value" [class.text-primary]="order.status === 'NEW'">{{ order.status }}</span>
           </div>
-          <div class="card bg-base-100 shadow-xl">
-            <div class="card-body">
-              <h3 class="card-title text-sm uppercase text-gray-400">Klient</h3>
-              <div class="font-bold">{{ order.userId }}</div>
-            </div>
+          <div class="bh-stat-card">
+            <span class="bh-stat-label">Klient</span>
+            <span class="bh-stat-value text-base font-mono">{{ order.userId }}</span>
           </div>
         </div>
 
         @if (order.payment) {
-          <div class="card bg-base-100 shadow-xl mb-6">
-            <div class="card-body">
-              <h3 class="card-title text-sm uppercase text-gray-400">Płatność</h3>
-              <p><span class="font-medium">Status:</span> {{ order.payment.status }}</p>
-              <p><span class="font-medium">Kwota:</span> {{ order.payment.amount | currency:order.payment.currency }}</p>
-              @if (order.payment.provider) { <p><span class="font-medium">Provider:</span> {{ order.payment.provider }}</p> }
-            </div>
+          <div class="bh-card bh-card-body mb-4">
+            <h3 class="bh-stat-label mb-2">Płatność</h3>
+            <p><span class="font-medium">Status:</span> <span class="bh-status-badge badge-info">{{ order.payment.status }}</span></p>
+            <p class="mt-1"><span class="font-medium">Kwota:</span> {{ order.payment.amount | currency:order.payment.currency }}</p>
+            @if (order.payment.provider) { <p class="mt-1"><span class="font-medium">Provider:</span> {{ order.payment.provider }}</p> }
           </div>
         }
 
         @if (order.shipment) {
-          <div class="card bg-base-100 shadow-xl mb-6">
-            <div class="card-body">
-              <h3 class="card-title text-sm uppercase text-gray-400">Wysyłka</h3>
-              <p><span class="font-medium">Status:</span> {{ order.shipment.status }}</p>
-              @if (order.shipment.carrier) { <p><span class="font-medium">Przewoźnik:</span> {{ order.shipment.carrier }}</p> }
-              @if (order.shipment.trackingNumber) { <p><span class="font-medium">Nr śledzenia:</span> {{ order.shipment.trackingNumber }}</p> }
-              @if (order.shipment.deliveryAddress) { <p><span class="font-medium">Adres:</span> {{ order.shipment.deliveryAddress }}</p> }
-            </div>
+          <div class="bh-card bh-card-body mb-4">
+            <h3 class="bh-stat-label mb-2">Wysyłka</h3>
+            <p><span class="font-medium">Status:</span> <span class="bh-status-badge badge-primary">{{ order.shipment.status }}</span></p>
+            @if (order.shipment.carrier) { <p class="mt-1"><span class="font-medium">Przewoźnik:</span> {{ order.shipment.carrier }}</p> }
+            @if (order.shipment.trackingNumber) { <p class="mt-1"><span class="font-medium">Nr śledzenia:</span> {{ order.shipment.trackingNumber }}</p> }
+            @if (order.shipment.deliveryAddress) { <p class="mt-1"><span class="font-medium">Adres:</span> {{ order.shipment.deliveryAddress }}</p> }
           </div>
         }
 
         @if (order.statusHistory?.length) {
-          <div class="card bg-base-100 shadow-xl mb-6">
-            <div class="card-body">
-              <h3 class="card-title text-sm uppercase text-gray-400">Historia statusów</h3>
-              <ul class="timeline timeline-vertical">
-                @for (h of order.statusHistory; track h.id) {
-                  <li>
-                    <hr/>
-                    <div class="timeline-start">{{ h.oldStatus || '—' }} → {{ h.newStatus }}</div>
-                    <div class="timeline-middle">●</div>
-                    <div class="timeline-end timeline-box">
-                      {{ h.changedAt | date:'short' }}
-                      @if (h.changedByUsername || h.changedBy) {
-                        <span class="text-xs opacity-70">({{ h.changedByUsername || h.changedBy }})</span>
-                      }
-                    </div>
-                    <hr/>
-                  </li>
-                }
-              </ul>
-            </div>
+          <div class="bh-card bh-card-body mb-4">
+            <h3 class="bh-stat-label mb-3">Historia statusów</h3>
+            <ul class="timeline timeline-vertical timeline-compact">
+              @for (h of order.statusHistory; track h.id) {
+                <li>
+                  <hr/>
+                  <div class="timeline-start text-sm font-medium">{{ h.oldStatus || '—' }} → {{ h.newStatus }}</div>
+                  <div class="timeline-middle text-primary">●</div>
+                  <div class="timeline-end timeline-box text-sm">
+                    {{ h.changedAt | date:'short' }}
+                    @if (h.changedByUsername || h.changedBy) {
+                      <span class="text-xs opacity-70">({{ h.changedByUsername || h.changedBy }})</span>
+                    }
+                  </div>
+                  <hr/>
+                </li>
+              }
+            </ul>
           </div>
         }
 
-        <div class="card bg-base-100 shadow-xl overflow-hidden">
-          <div class="card-body p-0">
-            <table class="table table-zebra w-full">
+        <div class="bh-table-shell">
+          <table class="table table-zebra w-full">
               <thead class="bg-base-200">
                 <tr>
                   <th>Produkt</th>
@@ -111,7 +98,6 @@ import { Observable } from 'rxjs';
                 </tr>
               </tfoot>
             </table>
-          </div>
         </div>
       </div>
     } @else {

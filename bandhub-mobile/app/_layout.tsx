@@ -1,14 +1,26 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { DarkTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { AuthProvider } from '@/providers/AuthProvider';
 import { BrandingProvider } from '@/providers/BrandingProvider';
 import { CartProvider } from '@/providers/CartProvider';
 import { DictionaryProvider } from '@/providers/DictionaryProvider';
+import { colors } from '@/constants/theme';
 import 'react-native-reanimated';
-import { useColorScheme } from '@/components/useColorScheme';
+
+const BandHubTheme = {
+  ...DarkTheme,
+  colors: {
+    ...DarkTheme.colors,
+    primary: colors.primary,
+    background: colors.background,
+    card: colors.backgroundElevated,
+    text: colors.text,
+    border: colors.border,
+    notification: colors.accent,
+  },
+};
 
 export {
-  // Catch any errors thrown by the Layout component.
   ErrorBoundary,
 } from 'expo-router';
 
@@ -31,11 +43,15 @@ export default function RootLayout() {
 }
 
 function RootLayoutNav() {
-  const colorScheme = useColorScheme();
-
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
+    <ThemeProvider value={BandHubTheme}>
+      <Stack
+        screenOptions={{
+          headerStyle: { backgroundColor: colors.backgroundElevated },
+          headerTintColor: colors.text,
+          headerTitleStyle: { fontWeight: '700' },
+          contentStyle: { backgroundColor: colors.background },
+        }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="news/[id]" options={{ title: 'Aktualnosc' }} />
         <Stack.Screen name="setlists/[id]" options={{ title: 'Setlista' }} />

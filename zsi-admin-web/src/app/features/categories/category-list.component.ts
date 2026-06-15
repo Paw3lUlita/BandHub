@@ -8,13 +8,13 @@ import { CategoryService } from '../../core/services/category.service';
   standalone: true,
   imports: [CommonModule, RouterLink],
   template: `
-    <div class="overflow-x-auto">
+    <div class="bh-page overflow-x-auto">
       <div class="flex justify-between items-center mb-4">
-        <h2 class="text-2xl font-bold">Kategorie</h2>
-        <a routerLink="/admin/categories/new" class="btn btn-primary btn-sm">+ Dodaj Kategorię</a>
+        <h2 class="bh-page-title">Kategorie</h2>
+        <a routerLink="/admin/categories/new" class="bh-btn-primary">+ Dodaj Kategorię</a>
       </div>
 
-      <table class="table table-zebra bg-base-100 shadow-lg rounded-box">
+      <table class="table table-zebra w-full">
         <thead>
           <tr class="bg-base-200">
             <th>ID</th>

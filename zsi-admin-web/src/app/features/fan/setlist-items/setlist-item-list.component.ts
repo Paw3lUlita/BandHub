@@ -17,10 +17,10 @@ const SORT_OPTIONS: SortOption[] = [
   standalone: true,
   imports: [AsyncPipe, RouterLink, ListPageControlsComponent],
   template: `
-    <div class="overflow-x-auto">
+    <div class="bh-page overflow-x-auto">
       <div class="flex justify-between items-center mb-4">
-        <h2 class="text-2xl font-bold">Pozycje Setlist</h2>
-        <a routerLink="/admin/setlist-items/new" class="btn btn-primary btn-sm">+ Dodaj</a>
+        <h2 class="bh-page-title">Pozycje Setlist</h2>
+        <a routerLink="/admin/setlist-items/new" class="bh-btn-primary">+ Dodaj</a>
       </div>
       <app-list-page-controls
         [params]="params()"
@@ -29,7 +29,7 @@ const SORT_OPTIONS: SortOption[] = [
         [totalPages]="(pageData$ | async)?.totalPages ?? 0"
         (paramsChange)="onParamsChange($event)"
       />
-      <table class="table table-zebra bg-base-100 shadow-lg rounded-box">
+      <table class="table table-zebra w-full">
         <thead>
           <tr class="bg-base-200">
             <th>Setlista</th>

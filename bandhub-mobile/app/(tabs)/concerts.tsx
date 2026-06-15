@@ -1,9 +1,14 @@
 import { Link } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
+import { Pressable } from 'react-native';
 import { fetchConcertsPage } from '@/lib/api';
 import { Concert } from '@/types/api';
 import { Screen } from '@/components/ui/Screen';
+import { AppText } from '@/components/ui/AppText';
+import { Card } from '@/components/ui/Card';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { LoadingView } from '@/components/ui/LoadingView';
+import { SectionHeader } from '@/components/ui/SectionHeader';
 
 export default function ConcertsScreen() {
   const [loading, setLoading] = useState(true);
@@ -19,68 +24,42 @@ export default function ConcertsScreen() {
 
   if (loading) {
     return (
-      <Screen scroll={false} contentContainerStyle={styles.center}>
-        <ActivityIndicator size="large" color="#38bdf8" />
+      <Screen scroll={false}>
+        <LoadingView />
       </Screen>
     );
   }
 
   if (error) {
     return (
-      <Screen scroll={false} contentContainerStyle={styles.center}>
-        <Text style={styles.error}>{error}</Text>
+      <Screen scroll={false}>
+        <AppText variant="error">{error}</AppText>
       </Screen>
     );
   }
 
   return (
     <Screen>
-      <Text style={styles.header}>Nadchodzace koncerty</Text>
+      <SectionHeader title="Nadchodzace koncerty" subtitle="Wybierz wydarzenie i kup bilet" />
+      {concerts.length === 0 ? <EmptyState message="Brak zaplanowanych koncertow." /> : null}
       {concerts.map((concert) => (
         <Link
           key={concert.id}
           href={{ pathname: '/concerts/[id]', params: { id: concert.id, name: concert.name } }}
           asChild>
-          <Pressable style={styles.card}>
-            <Text style={styles.title}>{concert.name}</Text>
-            <Text style={styles.meta}>{new Date(concert.date).toLocaleString()}</Text>
-            <Text style={styles.meta}>
-              {concert.venueName} - {concert.city}
-            </Text>
+          <Pressable>
+            <Card accent>
+              <AppText variant="h3">{concert.name}</AppText>
+              <AppText variant="caption" muted>
+                {new Date(concert.date).toLocaleString()}
+              </AppText>
+              <AppText variant="caption" muted>
+                {concert.venueName} · {concert.city}
+              </AppText>
+            </Card>
           </Pressable>
         </Link>
       ))}
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  center: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-  },
-  header: {
-    color: '#f8fafc',
-    fontSize: 22,
-    fontWeight: '700',
-    marginBottom: 4,
-  },
-  card: {
-    backgroundColor: '#1e293b',
-    borderRadius: 12,
-    padding: 12,
-    gap: 3,
-  },
-  title: {
-    color: '#f8fafc',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  meta: {
-    color: '#cbd5e1',
-  },
-  error: {
-    color: '#fda4af',
-  },
-});

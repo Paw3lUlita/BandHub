@@ -1,12 +1,18 @@
 import { Link } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { fetchNewsPage } from '@/lib/api';
 import { News } from '@/types/api';
 import { absoluteApiUrl } from '@/lib/config';
 import { Screen } from '@/components/ui/Screen';
 import { useBranding } from '@/providers/BrandingProvider';
 import { useText } from '@/providers/DictionaryProvider';
+import { AppText } from '@/components/ui/AppText';
+import { Card } from '@/components/ui/Card';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { LoadingView } from '@/components/ui/LoadingView';
+import { SectionHeader } from '@/components/ui/SectionHeader';
+import { colors, radius, spacing } from '@/constants/theme';
 
 export default function HomeScreen() {
   const { settings, isLoading: brandingLoading } = useBranding();
@@ -17,27 +23,23 @@ export default function HomeScreen() {
 
   useEffect(() => {
     fetchNewsPage()
-      .then((newsPage) => {
-        setNews(newsPage.content.slice(0, 5));
-      })
-      .catch((err) => {
-        setError(err instanceof Error ? err.message : 'Blad pobierania danych');
-      })
+      .then((newsPage) => setNews(newsPage.content.slice(0, 5)))
+      .catch((err) => setError(err instanceof Error ? err.message : 'Blad pobierania danych'))
       .finally(() => setLoading(false));
   }, []);
 
   if (loading || brandingLoading) {
     return (
-      <Screen scroll={false} contentContainerStyle={styles.center}>
-        <ActivityIndicator size="large" color="#38bdf8" />
+      <Screen scroll={false}>
+        <LoadingView />
       </Screen>
     );
   }
 
   if (error) {
     return (
-      <Screen scroll={false} contentContainerStyle={styles.center}>
-        <Text style={styles.error}>{error}</Text>
+      <Screen scroll={false}>
+        <AppText variant="error">{error}</AppText>
       </Screen>
     );
   }
@@ -46,28 +48,37 @@ export default function HomeScreen() {
 
   return (
     <Screen>
-      {heroUrl ? <Image source={{ uri: heroUrl }} style={styles.hero} /> : null}
-
-      <Text style={styles.header}>{settings?.bandName ?? 'BandHub'}</Text>
-      {settings?.tagline ? <Text style={styles.subheader}>{settings.tagline}</Text> : null}
+      <View style={styles.heroWrap}>
+        {heroUrl ? (
+          <Image source={{ uri: heroUrl }} style={styles.heroImage} />
+        ) : (
+          <View style={[styles.heroImage, styles.heroPlaceholder]} />
+        )}
+        <View style={styles.heroOverlay}>
+          <AppText variant="hero">{settings?.bandName ?? 'BandHub'}</AppText>
+          {settings?.tagline ? <AppText variant="caption" style={styles.tagline}>{settings.tagline}</AppText> : null}
+        </View>
+      </View>
 
       {settings?.aboutText ? (
-        <View style={styles.aboutCard}>
-          <Text style={styles.aboutText}>{settings.aboutText}</Text>
-        </View>
+        <Card>
+          <AppText variant="body">{settings.aboutText}</AppText>
+        </Card>
       ) : null}
 
-      <Text style={styles.section}>{t('home.section.news', 'Aktualnosci')}</Text>
+      <SectionHeader title={t('home.section.news', 'Aktualnosci')} />
       {news.length === 0 ? (
-        <Text style={styles.empty}>{t('home.empty.news', 'Brak aktualnosci.')}</Text>
+        <EmptyState message={t('home.empty.news', 'Brak aktualnosci.')} />
       ) : null}
       {news.map((item) => (
         <Link key={item.id} href={{ pathname: '/news/[id]', params: { id: item.id } }} asChild>
-          <Pressable style={styles.card}>
-            <Text style={styles.cardTitle}>{item.title}</Text>
-            <Text style={styles.cardText} numberOfLines={2}>
-              {item.content}
-            </Text>
+          <Pressable>
+            <Card accent>
+              <AppText variant="h3">{item.title}</AppText>
+              <AppText variant="caption" muted numberOfLines={2}>
+                {item.content}
+              </AppText>
+            </Card>
           </Pressable>
         </Link>
       ))}
@@ -76,64 +87,36 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  center: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
+  heroWrap: {
+    borderRadius: radius.xl,
+    overflow: 'hidden',
+    marginBottom: spacing.xs,
+    ...{
+      shadowColor: colors.primary,
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.25,
+      shadowRadius: 16,
+      elevation: 8,
+    },
   },
-  hero: {
+  heroImage: {
     width: '100%',
-    height: 180,
-    borderRadius: 14,
-    marginBottom: 4,
-    backgroundColor: '#1e293b',
+    height: 200,
+    backgroundColor: colors.surface,
   },
-  header: {
-    color: '#f8fafc',
-    fontSize: 26,
-    fontWeight: '800',
+  heroPlaceholder: {
+    backgroundColor: colors.primary + '33',
   },
-  subheader: {
-    color: '#94a3b8',
-    fontSize: 14,
-    marginBottom: 8,
-  },
-  aboutCard: {
-    backgroundColor: '#1e293b',
-    borderRadius: 12,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#334155',
-  },
-  aboutText: {
-    color: '#cbd5e1',
-    lineHeight: 20,
-  },
-  section: {
-    color: '#e2e8f0',
-    fontSize: 18,
-    fontWeight: '600',
-    marginTop: 8,
-  },
-  card: {
-    backgroundColor: '#1e293b',
-    borderRadius: 12,
-    padding: 12,
+  heroOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: spacing.lg,
+    backgroundColor: 'rgba(11,17,32,0.75)',
     gap: 4,
   },
-  cardTitle: {
-    color: '#f8fafc',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  cardText: {
-    color: '#cbd5e1',
-  },
-  empty: {
-    color: '#64748b',
-    fontStyle: 'italic',
-  },
-  error: {
-    color: '#fda4af',
+  tagline: {
+    color: colors.textMuted,
   },
 });

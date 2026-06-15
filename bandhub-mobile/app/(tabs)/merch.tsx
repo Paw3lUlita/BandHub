@@ -1,6 +1,6 @@
-import { Link } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { fetchProductsPage } from '@/lib/api';
 import { Product } from '@/types/api';
 import { Screen } from '@/components/ui/Screen';
@@ -8,8 +8,16 @@ import { RequireAuth } from '@/components/ui/RequireAuth';
 import { useCart } from '@/providers/CartProvider';
 import { useAuth } from '@/providers/AuthProvider';
 import { useText } from '@/providers/DictionaryProvider';
+import { AppText } from '@/components/ui/AppText';
+import { Card } from '@/components/ui/Card';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { LoadingView } from '@/components/ui/LoadingView';
+import { PriceTag } from '@/components/ui/PriceTag';
+import { SectionHeader } from '@/components/ui/SectionHeader';
+import { colors, radius, spacing } from '@/constants/theme';
 
 export default function MerchScreen() {
+  const router = useRouter();
   const { isAuthenticated } = useAuth();
   const { items } = useCart();
   const t = useText();
@@ -33,34 +41,24 @@ export default function MerchScreen() {
 
   return (
     <Screen>
-      <Text style={styles.header}>{t('merch.title', 'Sklep merch')}</Text>
+      <View style={styles.headerRow}>
+        <SectionHeader
+          title={t('merch.title', 'Sklep merch')}
+          subtitle={t('merch.subtitle', 'Oficjalny merch zespolu')}
+        />
+        <Pressable style={styles.cartBtn} onPress={() => router.push('/cart')}>
+          <AppText variant="caption" style={styles.cartBtnText}>
+            {t('merch.button.cart', 'Koszyk')} ({items.length})
+          </AppText>
+        </Pressable>
+      </View>
 
       <RequireAuth
-        message={t(
-          'merch.gate.message',
-          'Zaloguj sie, aby przegladac i kupowac merch oficjalny.',
-        )}>
-        <View style={styles.headerRow}>
-          <Text style={styles.subheader}>{t('merch.subtitle', 'Oficjalny merch zespolu')}</Text>
-          <Link href="/cart" asChild>
-            <Pressable style={styles.cartButton}>
-              <Text style={styles.cartButtonText}>
-                {t('merch.button.cart', 'Koszyk')} ({items.length})
-              </Text>
-            </Pressable>
-          </Link>
-        </View>
-
-        {loading ? (
-          <View style={styles.center}>
-            <ActivityIndicator size="large" color="#38bdf8" />
-          </View>
-        ) : null}
-
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-
+        message={t('merch.gate.message', 'Zaloguj sie, aby przegladac i kupowac merch oficjalny.')}>
+        {loading ? <LoadingView /> : null}
+        {error ? <AppText variant="error">{error}</AppText> : null}
         {!loading && !error && products.length === 0 ? (
-          <Text style={styles.meta}>{t('merch.empty', 'Brak produktow w sklepie.')}</Text>
+          <EmptyState message={t('merch.empty', 'Brak produktow w sklepie.')} />
         ) : null}
 
         {products.map((product) => (
@@ -68,14 +66,16 @@ export default function MerchScreen() {
             key={product.id}
             href={{ pathname: '/products/[id]', params: { id: product.id } }}
             asChild>
-            <Pressable style={styles.card}>
-              <Text style={styles.title}>{product.name}</Text>
-              <Text style={styles.meta}>
-                {product.price} {product.currency}
-              </Text>
-              <Text style={styles.meta}>
-                {t('merch.label.stock', 'Stan')}: {product.stockQuantity}
-              </Text>
+            <Pressable>
+              <Card>
+                <AppText variant="h3">{product.name}</AppText>
+                <View style={styles.metaRow}>
+                  <PriceTag amount={product.price} currency={product.currency} />
+                  <AppText variant="caption" muted>
+                    {t('merch.label.stock', 'Stan')}: {product.stockQuantity}
+                  </AppText>
+                </View>
+              </Card>
             </Pressable>
           </Link>
         ))}
@@ -85,50 +85,28 @@ export default function MerchScreen() {
 }
 
 const styles = StyleSheet.create({
-  center: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 24,
-  },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
   },
-  header: {
-    color: '#f8fafc',
-    fontSize: 22,
+  cartBtn: {
+    backgroundColor: colors.accent,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginTop: spacing.md,
+    alignSelf: 'flex-start',
+  },
+  cartBtnText: {
+    color: colors.background,
     fontWeight: '700',
   },
-  subheader: {
-    color: '#94a3b8',
-    fontSize: 14,
-  },
-  cartButton: {
-    backgroundColor: '#0ea5e9',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  cartButtonText: {
-    color: '#082f49',
-    fontWeight: '600',
-  },
-  card: {
-    backgroundColor: '#1e293b',
-    borderRadius: 12,
-    padding: 12,
-    gap: 3,
-  },
-  title: {
-    color: '#f8fafc',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  meta: {
-    color: '#cbd5e1',
-  },
-  error: {
-    color: '#fda4af',
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: spacing.xs,
   },
 });

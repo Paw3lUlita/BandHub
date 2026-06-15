@@ -8,12 +8,12 @@ import { UserService } from '../../core/services/user.service';
   standalone: true,
   imports: [AsyncPipe, RouterLink],
   template: `
-    <div class="overflow-x-auto">
+    <div class="bh-page overflow-x-auto">
       <div class="flex justify-between items-center mb-4">
-        <h2 class="text-2xl font-bold">Użytkownicy</h2>
-        <a routerLink="/admin/users/new" class="btn btn-primary btn-sm">+ Dodaj użytkownika</a>
+        <h2 class="bh-page-title">Użytkownicy</h2>
+        <a routerLink="/admin/users/new" class="bh-btn-primary">+ Dodaj użytkownika</a>
       </div>
-      <table class="table table-zebra bg-base-100 shadow-lg rounded-box">
+      <table class="table table-zebra w-full">
         <thead>
           <tr class="bg-base-200">
             <th>Login</th>

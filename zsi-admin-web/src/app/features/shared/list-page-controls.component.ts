@@ -20,48 +20,59 @@ export interface SortOption {
   standalone: true,
   imports: [FormsModule, CommonModule],
   template: `
-    <div class="flex flex-wrap items-center gap-4 mb-4 p-3 bg-base-200 rounded-lg">
+    <div class="bh-filter-bar mb-4">
+      <div class="flex items-center gap-2 flex-1 min-w-[200px] order-first w-full sm:w-auto sm:order-none sm:flex-[2]">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 opacity-40 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+        <input
+          type="text"
+          class="input input-bordered input-sm flex-1 bg-base-100"
+          placeholder="Szukaj..."
+          [ngModel]="params().q"
+          (ngModelChange)="onQueryChange($event)"
+        />
+      </div>
+
       <div class="flex items-center gap-2">
-        <label class="text-sm font-medium">Sortuj po:</label>
-        <select class="select select-bordered select-sm" [ngModel]="params().sortBy" (ngModelChange)="onSortByChange($event)">
+        <label class="text-xs font-semibold uppercase tracking-wide text-base-content/50">Sortuj</label>
+        <select class="select select-bordered select-sm bg-base-100" [ngModel]="params().sortBy" (ngModelChange)="onSortByChange($event)">
           @for (opt of sortOptions(); track opt.value) {
             <option [value]="opt.value">{{ opt.label }}</option>
           }
         </select>
       </div>
+
       <div class="flex items-center gap-2">
-        <label class="text-sm font-medium">Kierunek:</label>
-        <select class="select select-bordered select-sm" [ngModel]="params().sortDir" (ngModelChange)="onSortDirChange($event)">
+        <select class="select select-bordered select-sm bg-base-100" [ngModel]="params().sortDir" (ngModelChange)="onSortDirChange($event)">
           <option value="asc">Rosnąco</option>
           <option value="desc">Malejąco</option>
         </select>
       </div>
+
       <div class="flex items-center gap-2">
-        <label class="text-sm font-medium">Na stronie:</label>
-        <select class="select select-bordered select-sm" [ngModel]="params().size" (ngModelChange)="onSizeChange($event)">
+        <label class="text-xs font-semibold uppercase tracking-wide text-base-content/50">Na str.</label>
+        <select class="select select-bordered select-sm bg-base-100" [ngModel]="params().size" (ngModelChange)="onSizeChange($event)">
           <option [value]="5">5</option>
           <option [value]="10">10</option>
           <option [value]="20">20</option>
           <option [value]="50">50</option>
         </select>
       </div>
-      <div class="flex items-center gap-2 flex-1 min-w-[180px]">
-        <label class="text-sm font-medium">Szukaj:</label>
-        <input type="text" class="input input-bordered input-sm flex-1" placeholder="Filtruj..."
-               [ngModel]="params().q" (ngModelChange)="onQueryChange($event)" />
-      </div>
+
       @if (totalElements() >= 0) {
-        <span class="text-sm opacity-70">Łącznie: {{ totalElements() }}</span>
+        <span class="text-xs font-medium text-base-content/50 hidden sm:inline">Łącznie: {{ totalElements() }}</span>
       }
+
       @if (totalPages() > 1) {
-        <div class="flex items-center gap-2 ml-auto">
-          <button class="btn btn-sm btn-ghost" [disabled]="params().page <= 0" (click)="goPage(params().page - 1)">←</button>
-          <span class="text-sm">Strona {{ params().page + 1 }} / {{ totalPages() }}</span>
-          <button class="btn btn-sm btn-ghost" [disabled]="params().page >= totalPages() - 1" (click)="goPage(params().page + 1)">→</button>
+        <div class="flex items-center gap-1 ml-auto">
+          <button class="btn btn-sm btn-ghost" [disabled]="params().page <= 0" (click)="goPage(params().page - 1)">‹</button>
+          <span class="text-xs font-medium px-2">{{ params().page + 1 }} / {{ totalPages() }}</span>
+          <button class="btn btn-sm btn-ghost" [disabled]="params().page >= totalPages() - 1" (click)="goPage(params().page + 1)">›</button>
         </div>
       }
     </div>
-  `
+  `,
 })
 export class ListPageControlsComponent {
   params = input.required<ListPageParams>();

@@ -70,7 +70,7 @@ interface DraftRow {
             }
             <div class="card-actions justify-end mt-2">
               <button
-                class="btn btn-primary btn-sm"
+                class="bh-btn-primary"
                 [disabled]="!newKey || !newValue || creating()"
                 (click)="addEntry()"
               >

@@ -20,7 +20,7 @@ import {
       <div class="max-w-4xl mx-auto">
         <div class="flex justify-between items-center mb-6">
           <div>
-            <h2 class="text-2xl font-bold">{{ u.username }}</h2>
+            <h2 class="bh-page-title">{{ u.username }}</h2>
             <p class="text-base-content/70 text-sm">{{ u.firstName }} {{ u.lastName }} · {{ u.email || 'brak email' }}</p>
           </div>
           <a routerLink="/admin/users" class="btn btn-ghost">← Wróć do listy</a>
@@ -107,7 +107,7 @@ import {
                   <option [value]="r.name">{{ r.name }}</option>
                 }
               </select>
-              <button class="btn btn-primary btn-sm" (click)="assignRole()" [disabled]="!selectedRole()">Dodaj rolę</button>
+              <button class="bh-btn-primary" (click)="assignRole()" [disabled]="!selectedRole()">Dodaj rolę</button>
             </div>
           </div>
         </div>
