@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
@@ -97,6 +98,18 @@ public class OrderAdminService {
         );
         orderStatusHistoryRepository.save(history);
         order.changeStatus(newStatus);
+        syncRelatedRecords(orderId, newStatus);
+    }
+
+    private void syncRelatedRecords(UUID orderId, OrderStatus newStatus) {
+        LocalDateTime now = LocalDateTime.now();
+        if (newStatus == OrderStatus.PAID) {
+            paymentRepository.findByOrderId(orderId).forEach(p -> p.markAsPaid(now));
+        } else if (newStatus == OrderStatus.SHIPPED) {
+            shipmentRepository.findByOrderId(orderId).forEach(s -> s.markAsShipped(now));
+        } else if (newStatus == OrderStatus.DELIVERED) {
+            shipmentRepository.findByOrderId(orderId).forEach(s -> s.markAsDelivered(now));
+        }
     }
 
     private void restoreStockForOrder(Order order) {
